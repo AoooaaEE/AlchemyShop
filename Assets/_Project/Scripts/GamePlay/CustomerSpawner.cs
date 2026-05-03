@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Alchemy.Data;
 
 namespace Alchemy.Gameplay
 {
@@ -76,7 +77,26 @@ namespace Alchemy.Gameplay
             var customer = go.AddComponent<Customer>();
             customer.SetExit(exitPosition);
 
+            var recipe = RecipeBook.Random();
+            if (recipe != null)
+            {
+                customer.SetRecipe(recipe);
+                TintBody(go, recipe.iconColor);
+            }
+
             CustomerQueue.Instance.Enqueue(customer);
+        }
+
+        private static void TintBody(GameObject go, Color color)
+        {
+            var rend = go.GetComponent<MeshRenderer>();
+            if (rend == null) return;
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(shader);
+            // Смешиваем цвет клиента и цвет рецепта: читаемая подсказка без резкой заливки.
+            var body = Color.Lerp(rend.sharedMaterial != null ? rend.sharedMaterial.color : Color.gray, color, 0.55f);
+            mat.color = body;
+            rend.sharedMaterial = mat;
         }
 
         private static void ApplyRandomColor(GameObject go)
