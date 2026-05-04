@@ -43,11 +43,24 @@ namespace Alchemy.Utils
         {
             // Animator уже создан glTFast'ом на корне модели.
             var animator = go.GetComponentInChildren<Animator>(true);
-            if (animator == null) return;
+            if (animator == null)
+            {
+                Debug.LogWarning($"[ModelLoader] Animator не найден у {go.name}. Анимаций не будет.");
+                return;
+            }
+            animator.applyRootMotion = false;
 
             // AnimationClip'ы — sub-asset'ы импортированного glb.
             var clips = Resources.LoadAll<AnimationClip>(resourcePath);
-            if (clips == null || clips.Length == 0) return;
+            if (clips == null || clips.Length == 0)
+            {
+                Debug.LogWarning($"[ModelLoader] {resourcePath}: не нашёл AnimationClip'ов через Resources.LoadAll. " +
+                                 $"Avatar={(animator.avatar != null ? animator.avatar.name : \"null\")}");
+                return;
+            }
+            Debug.Log($"[ModelLoader] {resourcePath}: загружено {clips.Length} клипов. " +
+                      $"Avatar={(animator.avatar != null ? animator.avatar.name : \"null\")}, " +
+                      $"isHuman={(animator.avatar != null && animator.avatar.isHuman)}");
 
             AnimationClip idle = null, walk = null;
             foreach (var c in clips)
@@ -63,6 +76,8 @@ namespace Alchemy.Utils
                 if (c != null && (c.name.ToLower().Contains("run") || c.name.ToLower().Contains("walk")))
                 { walk = c; break; }
 
+            Debug.Log($"[ModelLoader] {resourcePath}: idle={(idle != null ? idle.name : \"NONE\")}, " +
+                      $"walk={(walk != null ? walk.name : \"NONE\")}");
             if (idle == null && walk == null) return;
 
             var ca = animator.gameObject.GetComponent<CharacterAnimator>();

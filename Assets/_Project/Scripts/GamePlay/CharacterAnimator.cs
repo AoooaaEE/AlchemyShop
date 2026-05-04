@@ -36,7 +36,13 @@ namespace Alchemy.Gameplay
 
         public void Init(AnimationClip idle, AnimationClip walk)
         {
-            if (idle == null && walk == null) return;
+            if (idle == null && walk == null)
+            {
+                Debug.LogWarning($"[CharacterAnimator] {name}: оба клипа null, пропускаю.");
+                return;
+            }
+            Debug.Log($"[CharacterAnimator] {name}: Init idle={idle?.name}, walk={walk?.name}, " +
+                      $"animator={(animator != null ? \"OK\" : \"null\")}");
 
             graph = PlayableGraph.Create("CharacterAnim_" + name);
             graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
@@ -58,6 +64,9 @@ namespace Alchemy.Gameplay
         private void Update()
         {
             if (!graph.IsValid()) return;
+
+            // Агент мог быть добавлен ПОСЛЕ нашего Awake — ищем лениво.
+            if (agent == null) agent = GetComponentInParent<NavMeshAgent>();
 
             float speed = agent != null ? agent.velocity.magnitude : 0f;
             bool walkingNow = speed > velocityThreshold;

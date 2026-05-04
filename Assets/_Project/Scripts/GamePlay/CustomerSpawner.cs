@@ -75,11 +75,14 @@ namespace Alchemy.Gameplay
             ModelLoader.StripColliders(go);
 
             var agent = go.AddComponent<NavMeshAgent>();
-            agent.radius       = agentRadius;
-            agent.height       = agentHeight;
-            agent.speed        = agentSpeed;
-            agent.angularSpeed = 360f;
-            agent.acceleration = 12f;
+            agent.radius              = agentRadius;
+            agent.height              = agentHeight;
+            agent.speed               = agentSpeed;
+            agent.angularSpeed        = 360f;
+            agent.acceleration        = 12f;
+            agent.stoppingDistance    = 0.4f;          // не въезжают в стол/в спину соседу
+            agent.autoBraking         = true;
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
             // Модель KayKit имеет pivot у ступней → baseOffset 0 (агент стоит
             // ровно на NavMesh). Капсула — pivot в центре, ей нужен offset.
             agent.baseOffset   = usedModel ? 0f : 0.7f;

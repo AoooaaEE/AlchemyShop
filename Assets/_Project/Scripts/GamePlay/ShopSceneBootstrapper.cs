@@ -192,23 +192,22 @@ namespace Alchemy.Gameplay
         /// </summary>
         private void CreateDecor()
         {
-            // Бочки в углах
-            SpawnProp("BarrelDecor", new Vector3(-4.5f, 0f, -4f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
-            SpawnProp("BarrelDecor", new Vector3( 4.5f, 0f, -4f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
-            SpawnProp("CratesDecor", new Vector3( 4.5f, 0f,  4f), 0f, new Vector3(1.5f, 1.5f, 1.5f));
+            // ВАЖНО: декор уходит ТОЛЬКО на края лавки, чтобы не закрывать
+            // путь от спавна клиентов (z≈9) до очереди (z≈2.5) и до котла (z≈-3.5).
+            // Бочки и ящики — далеко в углах, за пределами рабочей зоны.
+            SpawnProp("BarrelDecor", new Vector3(-7f, 0f, -5.5f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("BarrelDecor", new Vector3( 7f, 0f, -5.5f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("CratesDecor", new Vector3( 7f, 0f,  5.5f), 0f, new Vector3(1.5f, 1.5f, 1.5f));
 
-            // Колонны по периметру для глубины
+            // Колонны — только в дальних углах за пределами навигации.
             var pillarBox = new Vector3(0.7f, 3f, 0.7f);
-            SpawnProp("Pillar", new Vector3(-4.8f, 0f,  6f), 0f, pillarBox);
-            SpawnProp("Pillar", new Vector3( 4.8f, 0f,  6f), 0f, pillarBox);
-            SpawnProp("Pillar", new Vector3(-4.8f, 0f, -5.5f), 0f, pillarBox);
-            SpawnProp("Pillar", new Vector3( 4.8f, 0f, -5.5f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3(-8f, 0f,  8f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 8f, 0f,  8f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3(-8f, 0f, -7f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 8f, 0f, -7f), 0f, pillarBox);
 
-            // Сундук с золотом — рядом с зоной апгрейдов
-            SpawnProp("ChestGold", new Vector3(-4.5f, 0f, 4f), 0f, new Vector3(1f, 0.7f, 0.7f));
-
-            // Прилавок-стол перед очередью клиентов
-            SpawnProp("Counter", new Vector3(0f, 0f, 1f), 90f, new Vector3(2.5f, 0.9f, 0.7f));
+            // Сундук с золотом — слева у апгрейдов, не на пути.
+            SpawnProp("ChestGold", new Vector3(-7f, 0f, 5.5f), 0f, new Vector3(1f, 0.7f, 0.7f));
         }
 
         private GameObject SpawnProp(string modelName, Vector3 position, float yaw = 0f,
@@ -233,21 +232,21 @@ namespace Alchemy.Gameplay
                     private void CreateWorkstations()
         {
             CreateWorkstation(WorkstationType.Shelf,
-                position: new Vector3(-3.5f, 0.75f, -2f),
+                position: new Vector3(-5.5f, 0.75f, -3f),
                 size:     new Vector3(1.2f, 1.5f, 1f),
                 color:    new Color(0.55f, 0.35f, 0.18f),
                 input:    Alchemy.Gameplay.CarryItem.None,
                 output:   Alchemy.Gameplay.CarryItem.Ingredient);
 
             CreateWorkstation(WorkstationType.Cauldron,
-                position: new Vector3(0f, 0.5f, -2f),
+                position: new Vector3(0f, 0.5f, -3.5f),
                 size:     new Vector3(1.4f, 1.0f, 1.4f),
                 color:    new Color(0.30f, 0.30f, 0.32f),
                 input:    Alchemy.Gameplay.CarryItem.Ingredient,
                 output:   Alchemy.Gameplay.CarryItem.BrewedPotion);
 
             CreateWorkstation(WorkstationType.BottlingTable,
-                position: new Vector3(3.5f, 0.5f, -2f),
+                position: new Vector3(5.5f, 0.5f, -3f),
                 size:     new Vector3(1.4f, 1.0f, 1f),
                 color:    new Color(0.20f, 0.45f, 0.65f),
                 input:    Alchemy.Gameplay.CarryItem.BrewedPotion,
@@ -404,7 +403,7 @@ namespace Alchemy.Gameplay
             var queue = gameObject.AddComponent<CustomerQueue>();
             queue.Configure(
                 frontSlot: new Vector3(0f, 0f, 2.5f),
-                spacing:   1.8f,    // модели KayKit шире капсул — больший шаг
+                spacing:   2.5f,    // модели KayKit шире капсул — больший шаг
                 max:       4);
 
             var spawner = gameObject.AddComponent<CustomerSpawner>();
