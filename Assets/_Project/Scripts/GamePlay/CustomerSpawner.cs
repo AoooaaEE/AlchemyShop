@@ -54,8 +54,10 @@ namespace Alchemy.Gameplay
             }
         }
 
+        // Намеренно НЕ используем Mage (это игрок-алхимик) и RogueHooded (это подмастерье),
+        // чтобы клиенты не сливались с персоналом.
         private static readonly string[] CustomerModels =
-            { "Knight", "Barbarian", "RogueHooded", "Mage", "Rogue" };
+            { "Knight", "Barbarian", "Rogue" };
 
         private void Spawn()
         {

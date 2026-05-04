@@ -573,8 +573,8 @@ namespace Alchemy.Gameplay
     
                 private GameObject CreateApprentice()
         {
-            // Подмастерье — Плут/Rogue, быстрый и лёгкий.
-            var go = ModelLoader.TryInstantiateCharacter("Rogue", transform);
+            // Подмастерье — Плут в капюшоне (RogueHooded), визуально отделён от мага-игрока и от клиентов.
+            var go = ModelLoader.TryInstantiateCharacter("RogueHooded", transform);
             if (go == null)
             {
                 go = GameObject.CreatePrimitive(PrimitiveType.Capsule);

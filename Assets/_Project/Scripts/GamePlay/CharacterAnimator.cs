@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.Playables;
 using UnityEngine.Animations;
 
@@ -17,19 +16,22 @@ namespace Alchemy.Gameplay
         [SerializeField] private float  velocityThreshold = 0.15f;
         [SerializeField] private float  blendTime = 0.18f;
 
-        private NavMeshAgent           agent;
         private Animator               animator;
         private PlayableGraph          graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable  idlePlayable;
         private AnimationClipPlayable  walkPlayable;
-        private bool                   isWalking;
         private float                  blend;     // 0 = idle, 1 = walk
+        private Transform              speedRef;  // по чему мерим скорость, если нет NavMeshAgent
+        private Vector3                lastPos;
+        private float                  trackedSpeed;
 
         private void Awake()
         {
             animator = GetComponent<Animator>();
-            agent    = GetComponentInParent<NavMeshAgent>();
+            // Опорная точка для измерения скорости — корень иерархии (обычно сам персонаж/игрок).
+            speedRef = transform.root;
+            lastPos  = speedRef.position;
         }
 
         public void Init(AnimationClip idle, AnimationClip walk)
@@ -66,17 +68,23 @@ namespace Alchemy.Gameplay
         {
             if (!graph.IsValid()) return;
 
-            // Агент мог быть добавлен ПОСЛЕ нашего Awake — ищем лениво.
-            if (agent == null) agent = GetComponentInParent<NavMeshAgent>();
+            // Скорость всегда меряем по transform-дельте — единый код для NPC и игрока.
+            // (У игрока NavMeshAgent.velocity не обновляется, т.к. он двигается через agent.Move().)
+            if (speedRef == null) speedRef = transform.root;
+            Vector3 pos = speedRef.position;
+            Vector3 delta = pos - lastPos;
+            delta.y = 0f;
+            float instant = Time.deltaTime > 0.0001f ? delta.magnitude / Time.deltaTime : 0f;
+            trackedSpeed = Mathf.Lerp(trackedSpeed, instant, 0.4f);
+            float speed = trackedSpeed;
+            lastPos = pos;
 
-            float speed = agent != null ? agent.velocity.magnitude : 0f;
             bool walkingNow = speed > velocityThreshold;
             float target = walkingNow ? 1f : 0f;
             blend = Mathf.MoveTowards(blend, target, Time.deltaTime / Mathf.Max(0.01f, blendTime));
 
             mixer.SetInputWeight(0, 1f - blend);
             mixer.SetInputWeight(1, blend);
-            isWalking = walkingNow;
         }
 
         private void OnDestroy()
