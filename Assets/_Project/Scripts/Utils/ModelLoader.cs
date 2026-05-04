@@ -1,4 +1,5 @@
 using UnityEngine;
+using Alchemy.Gameplay;
 
 namespace Alchemy.Utils
 {
@@ -28,7 +29,46 @@ namespace Alchemy.Utils
         }
 
         public static GameObject TryInstantiateCharacter(string name, Transform parent = null)
-            => TryInstantiate(CharactersPath, name, parent);
+        {
+            var go = TryInstantiate(CharactersPath, name, parent);
+            if (go != null) AttachAnimator(go, CharactersPath + name);
+            return go;
+        }
+
+        /// <summary>
+        /// Цепляет CharacterAnimator на корневой GameObject и подгружает Idle/Running_A
+        /// из AnimationClip'ов, что glTFast импортировал внутри .glb.
+        /// </summary>
+        private static void AttachAnimator(GameObject go, string resourcePath)
+        {
+            // Animator уже создан glTFast'ом на корне модели.
+            var animator = go.GetComponentInChildren<Animator>(true);
+            if (animator == null) return;
+
+            // AnimationClip'ы — sub-asset'ы импортированного glb.
+            var clips = Resources.LoadAll<AnimationClip>(resourcePath);
+            if (clips == null || clips.Length == 0) return;
+
+            AnimationClip idle = null, walk = null;
+            foreach (var c in clips)
+            {
+                if (c == null) continue;
+                if (idle == null && c.name == "Idle")       idle = c;
+                if (walk == null && c.name == "Running_A")  walk = c;
+            }
+            // Запасной поиск, если имена изменили.
+            if (idle == null) foreach (var c in clips)
+                if (c != null && c.name.ToLower().Contains("idle")) { idle = c; break; }
+            if (walk == null) foreach (var c in clips)
+                if (c != null && (c.name.ToLower().Contains("run") || c.name.ToLower().Contains("walk")))
+                { walk = c; break; }
+
+            if (idle == null && walk == null) return;
+
+            var ca = animator.gameObject.GetComponent<CharacterAnimator>();
+            if (ca == null) ca = animator.gameObject.AddComponent<CharacterAnimator>();
+            ca.Init(idle, walk);
+        }
 
         public static GameObject TryInstantiateProp(string name, Transform parent = null)
             => TryInstantiate(PropsPath, name, parent);

@@ -193,24 +193,26 @@ namespace Alchemy.Gameplay
         private void CreateDecor()
         {
             // Бочки в углах
-            SpawnProp("BarrelDecor", new Vector3(-4.5f, 0f, -4f));
-            SpawnProp("BarrelDecor", new Vector3( 4.5f, 0f, -4f));
-            SpawnProp("CratesDecor", new Vector3( 4.5f, 0f,  4f));
+            SpawnProp("BarrelDecor", new Vector3(-4.5f, 0f, -4f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("BarrelDecor", new Vector3( 4.5f, 0f, -4f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("CratesDecor", new Vector3( 4.5f, 0f,  4f), 0f, new Vector3(1.5f, 1.5f, 1.5f));
 
             // Колонны по периметру для глубины
-            SpawnProp("Pillar", new Vector3(-4.8f, 0f,  6f));
-            SpawnProp("Pillar", new Vector3( 4.8f, 0f,  6f));
-            SpawnProp("Pillar", new Vector3(-4.8f, 0f, -5.5f));
-            SpawnProp("Pillar", new Vector3( 4.8f, 0f, -5.5f));
+            var pillarBox = new Vector3(0.7f, 3f, 0.7f);
+            SpawnProp("Pillar", new Vector3(-4.8f, 0f,  6f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 4.8f, 0f,  6f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3(-4.8f, 0f, -5.5f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 4.8f, 0f, -5.5f), 0f, pillarBox);
 
             // Сундук с золотом — рядом с зоной апгрейдов
-            SpawnProp("ChestGold", new Vector3(-4.5f, 0f, 4f));
+            SpawnProp("ChestGold", new Vector3(-4.5f, 0f, 4f), 0f, new Vector3(1f, 0.7f, 0.7f));
 
             // Прилавок-стол перед очередью клиентов
-            SpawnProp("Counter", new Vector3(0f, 0f, 1f), yaw: 90f);
+            SpawnProp("Counter", new Vector3(0f, 0f, 1f), 90f, new Vector3(2.5f, 0.9f, 0.7f));
         }
 
-        private GameObject SpawnProp(string modelName, Vector3 position, float yaw = 0f)
+        private GameObject SpawnProp(string modelName, Vector3 position, float yaw = 0f,
+            Vector3? obstacleSize = null)
         {
             var go = ModelLoader.TryInstantiateProp(modelName, transform);
             if (go == null) return null;
@@ -218,8 +220,13 @@ namespace Alchemy.Gameplay
             go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             ModelLoader.StripColliders(go);
 
-            var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
-            mod.ignoreFromBuild = true;
+            // Декоративный пропс — персонажи должны его обходить.
+            var size = obstacleSize ?? new Vector3(1f, 1.2f, 1f);
+            var obstacle = go.AddComponent<NavMeshObstacle>();
+            obstacle.shape   = NavMeshObstacleShape.Box;
+            obstacle.center  = new Vector3(0f, size.y * 0.5f, 0f);
+            obstacle.size    = size;
+            obstacle.carving = true;
             return go;
         }
 
@@ -299,9 +306,13 @@ namespace Alchemy.Gameplay
             var processor = go.AddComponent<Alchemy.Gameplay.WorkstationProcessor>();
             processor.Configure(input, output, time: 1.2f);
 
-            // Чтобы рабочее место не запекалось в NavMesh.
-            var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
-            mod.ignoreFromBuild = true;
+            // NavMeshObstacle с carving — персонажи будут обтекать стол/полку,
+            // а не проходить сквозь.
+            var obstacle = go.AddComponent<NavMeshObstacle>();
+            obstacle.shape   = NavMeshObstacleShape.Box;
+            obstacle.center  = new Vector3(0f, size.y * 0.5f, 0f);
+            obstacle.size    = new Vector3(size.x, size.y, size.z);
+            obstacle.carving = true;
         }
 
         private static void AddCauldronLiquid(Transform parent)
@@ -392,8 +403,8 @@ namespace Alchemy.Gameplay
         {
             var queue = gameObject.AddComponent<CustomerQueue>();
             queue.Configure(
-                frontSlot: new Vector3(0f, 0f, 2f),
-                spacing:   1.2f,
+                frontSlot: new Vector3(0f, 0f, 2.5f),
+                spacing:   1.8f,    // модели KayKit шире капсул — больший шаг
                 max:       4);
 
             var spawner = gameObject.AddComponent<CustomerSpawner>();

@@ -27,8 +27,8 @@ namespace Alchemy.Gameplay
         [SerializeField] private Vector3 exitPosition  = new Vector3(0f, 1f, 12f);
 
         [Header("Параметры NavMeshAgent клиента")]
-        [SerializeField] private float agentRadius = 0.3f;
-        [SerializeField] private float agentHeight = 1.5f;
+        [SerializeField] private float agentRadius = 0.45f;
+        [SerializeField] private float agentHeight = 1.7f;
         [SerializeField] private float agentSpeed  = 2.5f;
 
         private float timer;
