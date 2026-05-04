@@ -25,7 +25,6 @@ namespace Alchemy.Gameplay
         private Transform              speedRef;  // по чему мерим скорость, если нет NavMeshAgent
         private Vector3                lastPos;
         private float                  trackedSpeed;
-        private float                  debugTimer;
 
         private void Awake()
         {
@@ -43,12 +42,6 @@ namespace Alchemy.Gameplay
                 Debug.LogWarning($"[CharacterAnimator] {name}: оба клипа null, пропускаю.");
                 return;
             }
-            string idleN = idle != null ? idle.name : "null";
-            string walkN = walk != null ? walk.name : "null";
-            string animOk = animator != null ? "OK" : "null";
-            Debug.Log("[CharacterAnimator] " + name + ": Init idle=" + idleN +
-                      ", walk=" + walkN + ", animator=" + animOk);
-
             graph = PlayableGraph.Create("CharacterAnim_" + name);
             graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
 
@@ -87,14 +80,6 @@ namespace Alchemy.Gameplay
 
             mixer.SetInputWeight(0, 1f - blend);
             mixer.SetInputWeight(1, blend);
-
-            debugTimer += Time.deltaTime;
-            if (debugTimer > 2f)
-            {
-                debugTimer = 0f;
-                Debug.Log("[CharacterAnimator] " + name + ": speed=" +
-                          speed.ToString("F2") + ", blend=" + blend.ToString("F2"));
-            }
         }
 
         private void OnDestroy()
