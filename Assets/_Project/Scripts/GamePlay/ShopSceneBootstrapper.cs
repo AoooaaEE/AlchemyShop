@@ -55,7 +55,8 @@ namespace Alchemy.Gameplay
             CreateWorkstations();
             CreateCustomerSystem();
             CreateQueueSeller();
-            CreateUpgradePads();
+            // Апгрейд-пады (подмастерье/цена/расширение) появляются только после постройки хижины.
+            if (GetBuildLevel("build_hut") >= 1) CreateUpgradePads();
             var alchemist  = CreateAlchemist();
             camGo.GetComponent<Alchemy.Gameplay.IsoCameraFollow>()?.SetTarget(alchemist.transform); 
                         BakeNavMesh();
@@ -113,25 +114,26 @@ namespace Alchemy.Gameplay
         {
             if (id == "hire_apprentice" && level >= 1) EnsureApprentice();
             if (id == "build_hut"      && level >= 1) OnHutBuilt();
-            if (id == "build_shelf"    && level >= 1) OnWorkstationBuilt(WorkstationType.Shelf,         ShelfPos);
-            if (id == "build_cauldron" && level >= 1) OnWorkstationBuilt(WorkstationType.Cauldron,      CauldronPos);
-            if (id == "build_table"    && level >= 1) OnWorkstationBuilt(WorkstationType.BottlingTable, TablePos);
         }
 
         private void OnHutBuilt()
         {
             HideBuildSlot("build_hut");
             CreateHut(HutPos);
+
+            // В хижине сразу появляются все рабочие столы и апгрейд-пады.
+            CreateRealWorkstation(WorkstationType.Shelf,         ShelfPos);
+            CreateRealWorkstation(WorkstationType.Cauldron,      CauldronPos);
+            CreateRealWorkstation(WorkstationType.BottlingTable, TablePos);
+            CreateUpgradePads();
+
             // Лавка открылась — пускаем клиентов.
             if (CustomerSpawner.Instance != null)
                 CustomerSpawner.Instance.SetSpawningEnabled(true);
         }
 
-        private void OnWorkstationBuilt(WorkstationType type, Vector3 pos)
+        private void CreateRealWorkstation(WorkstationType type, Vector3 pos)
         {
-            string id = BuildIdForWorkstation(type);
-            HideBuildSlot(id);
-
             switch (type)
             {
                 case WorkstationType.Shelf:
@@ -157,14 +159,6 @@ namespace Alchemy.Gameplay
                     break;
             }
         }
-
-        private static string BuildIdForWorkstation(WorkstationType t) => t switch
-        {
-            WorkstationType.Shelf         => "build_shelf",
-            WorkstationType.Cauldron      => "build_cauldron",
-            WorkstationType.BottlingTable => "build_table",
-            _ => null
-        };
 
         private void HideBuildSlot(string id)
         {
@@ -307,49 +301,23 @@ namespace Alchemy.Gameplay
 
                     private void CreateWorkstations()
         {
-            // Хижина — стартовая постройка. Пока её нет, на её месте призрак-пад.
+            // Единственный билд-пад — хижина. Внутри неё после постройки появляются
+            // все рабочие столы и апгрейд-пады разом, никакой отдельной покупки полки/котла/стола.
             int hutLvl = GetBuildLevel("build_hut");
-            if (hutLvl >= 1)  CreateHut(HutPos);
-            else              CreateBuildSlot("build_hut", HutPos, ghostKind: GhostKind.Hut);
-
-            // Полка ингредиентов
-            int shelfLvl = GetBuildLevel("build_shelf");
-            if (shelfLvl >= 1)
+            if (hutLvl >= 1)
             {
-                CreateWorkstation(WorkstationType.Shelf, ShelfPos,
-                    size:   new Vector3(1.2f, 1.5f, 1f),
-                    color:  new Color(0.55f, 0.35f, 0.18f),
-                    input:  Alchemy.Gameplay.CarryItem.None,
-                    output: Alchemy.Gameplay.CarryItem.Ingredient);
+                CreateHut(HutPos);
+                CreateRealWorkstation(WorkstationType.Shelf,         ShelfPos);
+                CreateRealWorkstation(WorkstationType.Cauldron,      CauldronPos);
+                CreateRealWorkstation(WorkstationType.BottlingTable, TablePos);
             }
-            else CreateBuildSlot("build_shelf", ShelfPos, ghostKind: GhostKind.Shelf);
-
-            // Котёл
-            int cauldronLvl = GetBuildLevel("build_cauldron");
-            if (cauldronLvl >= 1)
+            else
             {
-                CreateWorkstation(WorkstationType.Cauldron, CauldronPos,
-                    size:   new Vector3(1.4f, 1.0f, 1.4f),
-                    color:  new Color(0.30f, 0.30f, 0.32f),
-                    input:  Alchemy.Gameplay.CarryItem.Ingredient,
-                    output: Alchemy.Gameplay.CarryItem.BrewedPotion);
+                CreateBuildSlot("build_hut", HutPos, ghostKind: GhostKind.Hut);
             }
-            else CreateBuildSlot("build_cauldron", CauldronPos, ghostKind: GhostKind.Cauldron);
-
-            // Стол розлива
-            int tableLvl = GetBuildLevel("build_table");
-            if (tableLvl >= 1)
-            {
-                CreateWorkstation(WorkstationType.BottlingTable, TablePos,
-                    size:   new Vector3(1.4f, 1.0f, 1f),
-                    color:  new Color(0.20f, 0.45f, 0.65f),
-                    input:  Alchemy.Gameplay.CarryItem.BrewedPotion,
-                    output: Alchemy.Gameplay.CarryItem.BottledPotion);
-            }
-            else CreateBuildSlot("build_table", TablePos, ghostKind: GhostKind.Table);
         }
 
-        private enum GhostKind { Hut, Shelf, Cauldron, Table }
+        private enum GhostKind { Hut }
 
         private static int GetBuildLevel(string id)
         {
@@ -372,16 +340,7 @@ namespace Alchemy.Gameplay
             {
                 case GhostKind.Hut:
                     ghost = ModelLoader.TryInstantiateBuilding("building_home_A_red", root.transform);
-                    if (ghost != null) ghost.transform.localScale = Vector3.one * 1.4f;
-                    break;
-                case GhostKind.Shelf:
-                    ghost = ModelLoader.TryInstantiateProp("Shelf", root.transform);
-                    break;
-                case GhostKind.Cauldron:
-                    ghost = ModelLoader.TryInstantiateProp("Cauldron", root.transform);
-                    break;
-                case GhostKind.Table:
-                    ghost = ModelLoader.TryInstantiateProp("BottlingTable", root.transform);
+                    if (ghost != null) ghost.transform.localScale = Vector3.one * 2.0f;
                     break;
             }
             if (ghost != null)
@@ -420,7 +379,7 @@ namespace Alchemy.Gameplay
             if (go == null) return;
             go.name = "Hut";
             go.transform.position   = new Vector3(pos.x, 0f, pos.z);
-            go.transform.localScale = Vector3.one * 1.4f;
+            go.transform.localScale = Vector3.one * 2.0f;
             go.transform.rotation   = Quaternion.Euler(0f, 180f, 0f); // дверью к игроку
             ModelLoader.StripColliders(go);
 
@@ -610,55 +569,52 @@ namespace Alchemy.Gameplay
         /// </summary>
         private void CreateForest()
         {
-            string[] big   = { "trees_A_large",  "trees_B_medium", "trees_A_medium" };
-            string[] small = { "trees_A_small",  "trees_B_cut",    "trees_A_medium" };
+            // Только высокие деревья — игрок стоит «в высоком лесу».
+            string[] big = { "trees_A_large", "trees_B_medium", "trees_A_medium" };
 
-            // 1) Кольцо вокруг поляны (рабочей зоны).
-            int bigCount = 14;
-            float ringR  = 11f;
-            for (int i = 0; i < bigCount; i++)
+            // 1) Внешнее плотное кольцо вокруг всей рабочей зоны.
+            int   ringCount = 22;
+            float ringR     = 13f;
+            for (int i = 0; i < ringCount; i++)
             {
-                float a   = (i / (float)bigCount) * Mathf.PI * 2f;
+                float a   = (i / (float)ringCount) * Mathf.PI * 2f;
                 float jit = Random.Range(-1.2f, 1.2f);
                 float r   = ringR + jit;
                 var pos   = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
-                // Открываем два коридора:
-                //   - на север (z>7): оттуда приходят клиенты
-                //   - на юг (z<-7): туда ведёт тропинка из леса от игрока
-                if (Mathf.Abs(pos.x) < 2.5f && pos.z >  7f) continue;
-                if (Mathf.Abs(pos.x) < 2.5f && pos.z < -7f) continue;
+                // Коридор на север — оттуда приходят клиенты.
+                if (Mathf.Abs(pos.x) < 2.8f && pos.z >  7f) continue;
+                // Коридор на юг — туда уходит тропинка к спавну игрока.
+                if (Mathf.Abs(pos.x) < 2.8f && pos.z < -7f) continue;
                 SpawnTree(big[Random.Range(0, big.Length)], pos,
                           yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(0.95f, 1.25f));
+                          scale: Random.Range(2.0f, 2.8f));
             }
 
-            // 2) Густой лес вокруг спавна игрока (игрок стоит «в лесу»).
+            // 2) Плотный высокий лес вокруг спавна игрока.
             Vector3 spawn = alchemistPos;
-            int   spawnCount = 18;
-            float spawnR     = 4.5f;
+            int   spawnCount = 26;
             for (int i = 0; i < spawnCount; i++)
             {
-                float a   = (i / (float)spawnCount) * Mathf.PI * 2f;
-                float r   = spawnR + Random.Range(-1.0f, 1.5f);
-                var pos   = new Vector3(spawn.x + Mathf.Cos(a) * r, 0f, spawn.z + Mathf.Sin(a) * r);
+                float a = (i / (float)spawnCount) * Mathf.PI * 2f;
+                float r = Random.Range(3.5f, 7.0f);
+                var pos = new Vector3(spawn.x + Mathf.Cos(a) * r, 0f, spawn.z + Mathf.Sin(a) * r);
                 // Открытый коридор на север (к хижине).
-                if (Mathf.Abs(pos.x) < 2.0f && pos.z > spawn.z + 1f) continue;
-                bool useBig = Random.value < 0.55f;
-                var arr     = useBig ? big : small;
-                SpawnTree(arr[Random.Range(0, arr.Length)], pos,
+                if (Mathf.Abs(pos.x) < 2.2f && pos.z > spawn.z + 0.5f) continue;
+                SpawnTree(big[Random.Range(0, big.Length)], pos,
                           yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(useBig ? 0.95f : 0.7f, useBig ? 1.25f : 1.0f));
+                          scale: Random.Range(2.2f, 3.2f));
             }
 
-            // 3) Несколько мелких пней в углах поляны.
-            for (int i = 0; i < 6; i++)
+            // 3) Заполняем углы карты редкими большими деревьями (фон).
+            for (int i = 0; i < 14; i++)
             {
-                var pos = new Vector3(Random.Range(-9f, 9f), 0f, Random.Range(-9f, 9f));
-                if (Mathf.Abs(pos.x) < 3.5f) continue;
-                if (pos.z > -1f && pos.z < 6f) continue;
-                SpawnTree(small[Random.Range(0, small.Length)], pos,
+                var pos = new Vector3(Random.Range(-18f, 18f), 0f, Random.Range(-18f, 18f));
+                // Не пускаем в саму поляну/коридоры.
+                if (Mathf.Abs(pos.x) < 8f && Mathf.Abs(pos.z) < 8f) continue;
+                if (Mathf.Abs(pos.x) < 3f) continue;
+                SpawnTree(big[Random.Range(0, big.Length)], pos,
                           yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(0.7f, 1f));
+                          scale: Random.Range(2.2f, 3.0f));
             }
         }
 
