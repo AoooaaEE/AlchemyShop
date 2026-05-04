@@ -33,11 +33,24 @@ namespace Alchemy.Gameplay
                 // Активный подмастерье в сцене (если куплен апгрейд).
         private GameObject apprenticeRef;
 
+        // Позиции рабочих мест в лавке. Реальные станции появляются только
+        // после покупки соответствующего «build_*» апгрейда; до этого на их
+        // месте стоит пад постройки с призраком и ценой.
+        private static readonly Vector3 ShelfPos    = new Vector3(-5.5f, 0f, -3f);
+        private static readonly Vector3 CauldronPos = new Vector3( 0f,   0f, -3.5f);
+        private static readonly Vector3 TablePos    = new Vector3( 5.5f, 0f, -3f);
+        private static readonly Vector3 HutPos      = new Vector3( 0f,   0f, -7f);
+
+        // Ссылка на пад-постройку для каждого id (чтобы спрятать призрак при покупке).
+        private readonly System.Collections.Generic.Dictionary<string, GameObject> buildSlots
+            = new System.Collections.Generic.Dictionary<string, GameObject>();
+
                     private void Awake()
         {
             CreateFloor();
             var camGo = CreateCamera();
             CreateLight();
+            CreateForest();
             CreateWorkstations();
             CreateCustomerSystem();
             CreateQueueSeller();
@@ -98,6 +111,68 @@ namespace Alchemy.Gameplay
         private void OnUpgradeChanged(string id, int level)
         {
             if (id == "hire_apprentice" && level >= 1) EnsureApprentice();
+            if (id == "build_hut"      && level >= 1) OnHutBuilt();
+            if (id == "build_shelf"    && level >= 1) OnWorkstationBuilt(WorkstationType.Shelf,         ShelfPos);
+            if (id == "build_cauldron" && level >= 1) OnWorkstationBuilt(WorkstationType.Cauldron,      CauldronPos);
+            if (id == "build_table"    && level >= 1) OnWorkstationBuilt(WorkstationType.BottlingTable, TablePos);
+        }
+
+        private void OnHutBuilt()
+        {
+            HideBuildSlot("build_hut");
+            CreateHut(HutPos);
+            // Лавка открылась — пускаем клиентов.
+            if (CustomerSpawner.Instance != null)
+                CustomerSpawner.Instance.SetSpawningEnabled(true);
+        }
+
+        private void OnWorkstationBuilt(WorkstationType type, Vector3 pos)
+        {
+            string id = BuildIdForWorkstation(type);
+            HideBuildSlot(id);
+
+            switch (type)
+            {
+                case WorkstationType.Shelf:
+                    CreateWorkstation(WorkstationType.Shelf, pos,
+                        size:   new Vector3(1.2f, 1.5f, 1f),
+                        color:  new Color(0.55f, 0.35f, 0.18f),
+                        input:  Alchemy.Gameplay.CarryItem.None,
+                        output: Alchemy.Gameplay.CarryItem.Ingredient);
+                    break;
+                case WorkstationType.Cauldron:
+                    CreateWorkstation(WorkstationType.Cauldron, pos,
+                        size:   new Vector3(1.4f, 1.0f, 1.4f),
+                        color:  new Color(0.30f, 0.30f, 0.32f),
+                        input:  Alchemy.Gameplay.CarryItem.Ingredient,
+                        output: Alchemy.Gameplay.CarryItem.BrewedPotion);
+                    break;
+                case WorkstationType.BottlingTable:
+                    CreateWorkstation(WorkstationType.BottlingTable, pos,
+                        size:   new Vector3(1.4f, 1.0f, 1f),
+                        color:  new Color(0.20f, 0.45f, 0.65f),
+                        input:  Alchemy.Gameplay.CarryItem.BrewedPotion,
+                        output: Alchemy.Gameplay.CarryItem.BottledPotion);
+                    break;
+            }
+        }
+
+        private static string BuildIdForWorkstation(WorkstationType t) => t switch
+        {
+            WorkstationType.Shelf         => "build_shelf",
+            WorkstationType.Cauldron      => "build_cauldron",
+            WorkstationType.BottlingTable => "build_table",
+            _ => null
+        };
+
+        private void HideBuildSlot(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            if (buildSlots.TryGetValue(id, out var go) && go != null)
+            {
+                Destroy(go);
+                buildSlots.Remove(id);
+            }
         }
 
         private void EnsureApprenticeFromUpgrades()
@@ -231,29 +306,140 @@ namespace Alchemy.Gameplay
 
                     private void CreateWorkstations()
         {
-            CreateWorkstation(WorkstationType.Shelf,
-                position: new Vector3(-5.5f, 0.75f, -3f),
-                size:     new Vector3(1.2f, 1.5f, 1f),
-                color:    new Color(0.55f, 0.35f, 0.18f),
-                input:    Alchemy.Gameplay.CarryItem.None,
-                output:   Alchemy.Gameplay.CarryItem.Ingredient);
+            // Хижина — стартовая постройка. Пока её нет, на её месте призрак-пад.
+            int hutLvl = GetBuildLevel("build_hut");
+            if (hutLvl >= 1)  CreateHut(HutPos);
+            else              CreateBuildSlot("build_hut", HutPos, ghostKind: GhostKind.Hut);
 
-            CreateWorkstation(WorkstationType.Cauldron,
-                position: new Vector3(0f, 0.5f, -3.5f),
-                size:     new Vector3(1.4f, 1.0f, 1.4f),
-                color:    new Color(0.30f, 0.30f, 0.32f),
-                input:    Alchemy.Gameplay.CarryItem.Ingredient,
-                output:   Alchemy.Gameplay.CarryItem.BrewedPotion);
+            // Полка ингредиентов
+            int shelfLvl = GetBuildLevel("build_shelf");
+            if (shelfLvl >= 1)
+            {
+                CreateWorkstation(WorkstationType.Shelf, ShelfPos,
+                    size:   new Vector3(1.2f, 1.5f, 1f),
+                    color:  new Color(0.55f, 0.35f, 0.18f),
+                    input:  Alchemy.Gameplay.CarryItem.None,
+                    output: Alchemy.Gameplay.CarryItem.Ingredient);
+            }
+            else CreateBuildSlot("build_shelf", ShelfPos, ghostKind: GhostKind.Shelf);
 
-            CreateWorkstation(WorkstationType.BottlingTable,
-                position: new Vector3(5.5f, 0.5f, -3f),
-                size:     new Vector3(1.4f, 1.0f, 1f),
-                color:    new Color(0.20f, 0.45f, 0.65f),
-                input:    Alchemy.Gameplay.CarryItem.BrewedPotion,
-                output:   Alchemy.Gameplay.CarryItem.BottledPotion);
+            // Котёл
+            int cauldronLvl = GetBuildLevel("build_cauldron");
+            if (cauldronLvl >= 1)
+            {
+                CreateWorkstation(WorkstationType.Cauldron, CauldronPos,
+                    size:   new Vector3(1.4f, 1.0f, 1.4f),
+                    color:  new Color(0.30f, 0.30f, 0.32f),
+                    input:  Alchemy.Gameplay.CarryItem.Ingredient,
+                    output: Alchemy.Gameplay.CarryItem.BrewedPotion);
+            }
+            else CreateBuildSlot("build_cauldron", CauldronPos, ghostKind: GhostKind.Cauldron);
+
+            // Стол розлива
+            int tableLvl = GetBuildLevel("build_table");
+            if (tableLvl >= 1)
+            {
+                CreateWorkstation(WorkstationType.BottlingTable, TablePos,
+                    size:   new Vector3(1.4f, 1.0f, 1f),
+                    color:  new Color(0.20f, 0.45f, 0.65f),
+                    input:  Alchemy.Gameplay.CarryItem.BrewedPotion,
+                    output: Alchemy.Gameplay.CarryItem.BottledPotion);
+            }
+            else CreateBuildSlot("build_table", TablePos, ghostKind: GhostKind.Table);
+        }
+
+        private enum GhostKind { Hut, Shelf, Cauldron, Table }
+
+        private static int GetBuildLevel(string id)
+        {
+            return UpgradeService.Instance != null ? UpgradeService.Instance.GetLevel(id) : 0;
+        }
+
+        /// <summary>
+        /// Создаёт пад-постройку: визуальный «призрак» нужного объекта + UpgradePad,
+        /// который списывает золото за fillTime секунд и вызывает OnUpgradeChanged.
+        /// </summary>
+        private void CreateBuildSlot(string upgradeId, Vector3 pos, GhostKind ghostKind)
+        {
+            var root = new GameObject("BuildSlot_" + upgradeId);
+            root.transform.SetParent(transform, false);
+            root.transform.position = new Vector3(pos.x, 0f, pos.z);
+
+            // 1) Призрачная модель сверху над падом.
+            GameObject ghost = null;
+            switch (ghostKind)
+            {
+                case GhostKind.Hut:
+                    ghost = ModelLoader.TryInstantiateBuilding("building_home_A_red", root.transform);
+                    if (ghost != null) ghost.transform.localScale = Vector3.one * 1.4f;
+                    break;
+                case GhostKind.Shelf:
+                    ghost = ModelLoader.TryInstantiateProp("Shelf", root.transform);
+                    break;
+                case GhostKind.Cauldron:
+                    ghost = ModelLoader.TryInstantiateProp("Cauldron", root.transform);
+                    break;
+                case GhostKind.Table:
+                    ghost = ModelLoader.TryInstantiateProp("BottlingTable", root.transform);
+                    break;
+            }
+            if (ghost != null)
+            {
+                ghost.transform.localPosition = Vector3.zero;
+                ModelLoader.StripColliders(ghost);
+                ModelLoader.MakeGhost(ghost, new Color(0.55f, 0.85f, 1f), alpha: 0.40f);
+                // Призрак не блокирует NavMesh.
+                var mod = ghost.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+                mod.ignoreFromBuild = true;
+            }
+
+            // 2) Сам пад — плоский квадрат у земли, как у обычных апгрейд-падов.
+            var pad = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pad.name = "Pad";
+            pad.transform.SetParent(root.transform, false);
+            pad.transform.localPosition = new Vector3(0f, 0.025f, 0f);
+            pad.transform.localScale    = new Vector3(1.6f, 0.05f, 1.6f);
+            ApplyColor(pad, new Color(0.95f, 0.85f, 0.45f));
+            var col = pad.GetComponent<Collider>();
+            if (col != null) DestroyImmediate(col);
+            var padMod = pad.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+            padMod.ignoreFromBuild = true;
+            var logic = pad.AddComponent<Alchemy.Gameplay.UpgradePad>();
+            logic.Configure(upgradeId);
+
+            buildSlots[upgradeId] = root;
+        }
+
+        /// <summary>
+        /// Ставит хижину-фон позади рабочего ряда. Чисто визуальный объект — лавка «открылась».
+        /// </summary>
+        private void CreateHut(Vector3 pos)
+        {
+            var go = ModelLoader.TryInstantiateBuilding("building_home_A_red", transform);
+            if (go == null) return;
+            go.name = "Hut";
+            go.transform.position   = new Vector3(pos.x, 0f, pos.z);
+            go.transform.localScale = Vector3.one * 1.4f;
+            go.transform.rotation   = Quaternion.Euler(0f, 180f, 0f); // дверью к игроку
+            ModelLoader.StripColliders(go);
+
+            // Хижина не блокирует путь — визуальный фон.
+            var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+            mod.ignoreFromBuild = true;
+        }
+
+        /// <summary>
+        /// Версия CreateWorkstation для рантайма (после покупки build_*). Вызывается
+        /// после BakeNavMesh, поэтому полагается на NavMeshObstacle.carving для динамики.
+        /// </summary>
+        private void CreateWorkstation(WorkstationType type, Vector3 position,
+            Vector3 size, Color color, Alchemy.Gameplay.CarryItem input,
+            Alchemy.Gameplay.CarryItem output)
+        {
+            CreateWorkstationInternal(type, position, size, color, input, output);
         }
     
-                private void CreateWorkstation(WorkstationType type, Vector3 position, Vector3 size, Color color,
+                private void CreateWorkstationInternal(WorkstationType type, Vector3 position, Vector3 size, Color color,
             Alchemy.Gameplay.CarryItem input, Alchemy.Gameplay.CarryItem output)
         {
             var go = new GameObject(type.ToString());
@@ -411,6 +597,64 @@ namespace Alchemy.Gameplay
                 spawn:    new Vector3(0f, 1f, 9f),
                 exit:     new Vector3(0f, 1f, 12f),
                 interval: 3.5f);
+
+            // До покупки хижины клиентов нет — лавка ещё не открылась.
+            bool hutBuilt = GetBuildLevel("build_hut") >= 1;
+            spawner.SetSpawningEnabled(hutBuilt);
+        }
+
+        /// <summary>
+        /// Раскидывает деревья и пни по периметру поляны, чтобы старт ощущался
+        /// как лесная полянка, а не голая площадка.
+        /// </summary>
+        private void CreateForest()
+        {
+            // Перечень деревьев, которые мы скачали с KayKit Medieval Hexagon Pack.
+            string[] big   = { "trees_A_large",  "trees_B_medium", "trees_A_medium" };
+            string[] small = { "trees_A_small",  "trees_B_cut",    "trees_A_medium" };
+
+            // Кольцо больших деревьев по краю поляны.
+            int bigCount = 14;
+            float ringR  = 11f;
+            for (int i = 0; i < bigCount; i++)
+            {
+                float a   = (i / (float)bigCount) * Mathf.PI * 2f;
+                float jit = Random.Range(-1.2f, 1.2f);
+                float r   = ringR + jit;
+                var pos   = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
+                // Не ставим дерево перед спавном клиентов и на пути к очереди.
+                if (Mathf.Abs(pos.x) < 2.5f && pos.z > 7f) continue;
+                SpawnTree(big[Random.Range(0, big.Length)], pos,
+                          yaw: Random.Range(0f, 360f),
+                          scale: Random.Range(0.95f, 1.25f));
+            }
+
+            // Несколько мелких пней/кустов внутри.
+            for (int i = 0; i < 6; i++)
+            {
+                var pos = new Vector3(Random.Range(-9f, 9f), 0f, Random.Range(-9f, 9f));
+                // Подальше от рабочего пятна (-7..6 по z) и центра.
+                if (Mathf.Abs(pos.x) < 3.5f) continue;
+                if (pos.z > -1f && pos.z < 6f) continue;
+                SpawnTree(small[Random.Range(0, small.Length)], pos,
+                          yaw: Random.Range(0f, 360f),
+                          scale: Random.Range(0.7f, 1f));
+            }
+        }
+
+        private void SpawnTree(string modelName, Vector3 pos, float yaw, float scale)
+        {
+            var go = ModelLoader.TryInstantiateNature(modelName, transform);
+            if (go == null) return;
+            go.name = modelName;
+            go.transform.position   = pos;
+            go.transform.rotation   = Quaternion.Euler(0f, yaw, 0f);
+            go.transform.localScale = Vector3.one * scale;
+            ModelLoader.StripColliders(go);
+
+            // Деревья на NavMesh не запекаем — просто декор.
+            var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+            mod.ignoreFromBuild = true;
         }
        
                         private void CreateUI()

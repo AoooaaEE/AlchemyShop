@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Alchemy.Data
 {
-        public enum UpgradeType { PotionPrice, Expansion, HireApprentice }
+        public enum UpgradeType { PotionPrice, Expansion, HireApprentice, Build }
 
     /// <summary>
     /// Карточка апгрейда: id, тип эффекта, цена и макс. уровень.

@@ -129,6 +129,11 @@ namespace Alchemy.Gameplay
                                     case UpgradeType.HireApprentice:
                     // Сам спавн делает ShopSceneBootstrapper, подписываясь на OnUpgradeChanged.
                     break;
+
+                case UpgradeType.Build:
+                    // Постройки (хижина / полка / котёл / стол / ...): эффект применяет
+                    // ShopSceneBootstrapper в OnUpgradeChanged. Здесь ничего не делаем.
+                    break;
             }
         }
     }
