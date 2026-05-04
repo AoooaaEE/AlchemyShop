@@ -1,6 +1,7 @@
 using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
+using Alchemy.Utils;
 
 namespace Alchemy.Gameplay
 {
@@ -44,6 +45,7 @@ namespace Alchemy.Gameplay
             var alchemist  = CreateAlchemist();
             camGo.GetComponent<Alchemy.Gameplay.IsoCameraFollow>()?.SetTarget(alchemist.transform); 
                         BakeNavMesh();
+            CreateDecor();
             AddAgentTo(alchemist);
 
             // Превращаем алхимика в игрока: снимаем AI-контроллер, ставим PlayerController.
@@ -121,10 +123,29 @@ namespace Alchemy.Gameplay
 
         private void CreateFloor()
         {
+            // Базовый плейн для NavMesh и света.
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
             floor.name = "Floor";
             floor.transform.SetParent(transform, false);
             floor.transform.localScale = floorScale;
+            ApplyColor(floor, new Color(0.32f, 0.24f, 0.18f));
+
+            // Сверху раскладываем декоративные каменные тайлы в сетку.
+            // Размер одного тайла KayKit — 4×4 ед., скейлируем.
+            int gridX = Mathf.Max(1, Mathf.RoundToInt(floorScale.x * 10f / 4f));
+            int gridZ = Mathf.Max(1, Mathf.RoundToInt(floorScale.z * 10f / 4f));
+            float halfX = (gridX - 1) * 2f;
+            float halfZ = (gridZ - 1) * 2f;
+            for (int ix = 0; ix < gridX; ix++)
+            for (int iz = 0; iz < gridZ; iz++)
+            {
+                var tile = ModelLoader.TryInstantiate(ModelLoader.FloorPath, "FloorTile", transform);
+                if (tile == null) return; // без модели — оставляем базовый плейн.
+                tile.transform.position = new Vector3(ix * 4f - halfX, 0.01f, iz * 4f - halfZ);
+                ModelLoader.StripColliders(tile);
+                var mod = tile.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+                mod.ignoreFromBuild = true; // NavMesh берём с базового Floor.
+            }
         }
 
                 private GameObject CreateCamera()
@@ -155,27 +176,77 @@ namespace Alchemy.Gameplay
             var l = go.AddComponent<Light>();
             l.type      = LightType.Directional;
             l.intensity = lightIntensity;
+            l.color     = new Color(1f, 0.95f, 0.85f); // тёплый солнечный свет
             l.shadows   = LightShadows.Soft;
+
+            // Мягкий ambient — лавка, не открытое поле.
+            RenderSettings.ambientMode      = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor  = new Color(0.55f, 0.50f, 0.60f);
+            RenderSettings.ambientEquatorColor = new Color(0.45f, 0.40f, 0.50f);
+            RenderSettings.ambientGroundColor  = new Color(0.20f, 0.15f, 0.18f);
+        }
+
+        /// <summary>
+        /// Декоративные пропсы вдоль стен лавки. Добавляются после NavMesh-бейка,
+        /// чтобы не запекаться в навигацию (всё равно с NavMeshModifier ignoreFromBuild).
+        /// </summary>
+        private void CreateDecor()
+        {
+            // ВАЖНО: декор уходит ТОЛЬКО на края лавки, чтобы не закрывать
+            // путь от спавна клиентов (z≈9) до очереди (z≈2.5) и до котла (z≈-3.5).
+            // Бочки и ящики — далеко в углах, за пределами рабочей зоны.
+            SpawnProp("BarrelDecor", new Vector3(-7f, 0f, -5.5f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("BarrelDecor", new Vector3( 7f, 0f, -5.5f), 0f, new Vector3(0.9f, 1.2f, 0.9f));
+            SpawnProp("CratesDecor", new Vector3( 7f, 0f,  5.5f), 0f, new Vector3(1.5f, 1.5f, 1.5f));
+
+            // Колонны — только в дальних углах за пределами навигации.
+            var pillarBox = new Vector3(0.7f, 3f, 0.7f);
+            SpawnProp("Pillar", new Vector3(-8f, 0f,  8f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 8f, 0f,  8f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3(-8f, 0f, -7f), 0f, pillarBox);
+            SpawnProp("Pillar", new Vector3( 8f, 0f, -7f), 0f, pillarBox);
+
+            // Сундук с золотом — слева у апгрейдов, не на пути.
+            SpawnProp("ChestGold", new Vector3(-7f, 0f, 5.5f), 0f, new Vector3(1f, 0.7f, 0.7f));
+        }
+
+        private GameObject SpawnProp(string modelName, Vector3 position, float yaw = 0f,
+            Vector3? obstacleSize = null)
+        {
+            var go = ModelLoader.TryInstantiateProp(modelName, transform);
+            if (go == null) return null;
+            go.transform.position = position;
+            go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            ModelLoader.StripColliders(go);
+
+            // Декоративный пропс — персонажи должны его обходить.
+            var size = obstacleSize ?? new Vector3(1f, 1.2f, 1f);
+            var obstacle = go.AddComponent<NavMeshObstacle>();
+            obstacle.shape   = NavMeshObstacleShape.Box;
+            obstacle.center  = new Vector3(0f, size.y * 0.5f, 0f);
+            obstacle.size    = size;
+            obstacle.carving = true;
+            return go;
         }
 
                     private void CreateWorkstations()
         {
             CreateWorkstation(WorkstationType.Shelf,
-                position: new Vector3(-3.5f, 0.75f, -2f),
+                position: new Vector3(-5.5f, 0.75f, -3f),
                 size:     new Vector3(1.2f, 1.5f, 1f),
                 color:    new Color(0.55f, 0.35f, 0.18f),
                 input:    Alchemy.Gameplay.CarryItem.None,
                 output:   Alchemy.Gameplay.CarryItem.Ingredient);
 
             CreateWorkstation(WorkstationType.Cauldron,
-                position: new Vector3(0f, 0.5f, -2f),
+                position: new Vector3(0f, 0.5f, -3.5f),
                 size:     new Vector3(1.4f, 1.0f, 1.4f),
                 color:    new Color(0.30f, 0.30f, 0.32f),
                 input:    Alchemy.Gameplay.CarryItem.Ingredient,
                 output:   Alchemy.Gameplay.CarryItem.BrewedPotion);
 
             CreateWorkstation(WorkstationType.BottlingTable,
-                position: new Vector3(3.5f, 0.5f, -2f),
+                position: new Vector3(5.5f, 0.5f, -3f),
                 size:     new Vector3(1.4f, 1.0f, 1f),
                 color:    new Color(0.20f, 0.45f, 0.65f),
                 input:    Alchemy.Gameplay.CarryItem.BrewedPotion,
@@ -185,17 +256,46 @@ namespace Alchemy.Gameplay
                 private void CreateWorkstation(WorkstationType type, Vector3 position, Vector3 size, Color color,
             Alchemy.Gameplay.CarryItem input, Alchemy.Gameplay.CarryItem output)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = type.ToString();
+            var go = new GameObject(type.ToString());
             go.transform.SetParent(transform, false);
-            go.transform.position   = position;
-            go.transform.localScale = size;
-            ApplyColor(go, color);
+            go.transform.position = new Vector3(position.x, 0f, position.z);
+
+            // Сначала пробуем красивую KayKit-модель. Если её нет — оставляем
+            // подкрашенный кубик-плейсхолдер (старое поведение).
+            string modelName = type switch
+            {
+                WorkstationType.Shelf         => "Shelf",
+                WorkstationType.Cauldron      => "Cauldron",
+                WorkstationType.BottlingTable => "BottlingTable",
+                _ => null
+            };
+            GameObject visual = string.IsNullOrEmpty(modelName)
+                ? null
+                : ModelLoader.TryInstantiateProp(modelName, go.transform);
+
+            if (visual != null)
+            {
+                visual.transform.localPosition = Vector3.zero;
+                ModelLoader.StripColliders(visual);
+
+                // Поверх «котла» добавляем светящуюся жижу нужного цвета.
+                if (type == WorkstationType.Cauldron)
+                    AddCauldronLiquid(visual.transform);
+            }
+            else
+            {
+                var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                cube.name = "Visual";
+                cube.transform.SetParent(go.transform, false);
+                cube.transform.localPosition = new Vector3(0f, position.y, 0f);
+                cube.transform.localScale    = size;
+                ApplyColor(cube, color);
+                ModelLoader.StripColliders(cube);
+            }
 
             // Точка взаимодействия — перед столом, ближе к центру лавки.
             var interaction = new GameObject("Interaction");
             interaction.transform.SetParent(go.transform, false);
-            interaction.transform.localPosition = new Vector3(0f, -position.y + 0.5f, 1.2f / Mathf.Max(0.01f, size.z));
             interaction.transform.position = new Vector3(position.x, 0f, position.z + 1.5f);
 
             var ws = go.AddComponent<Workstation>();
@@ -204,26 +304,64 @@ namespace Alchemy.Gameplay
             // Авто-обработка для игрока.
             var processor = go.AddComponent<Alchemy.Gameplay.WorkstationProcessor>();
             processor.Configure(input, output, time: 1.2f);
+
+            // NavMeshObstacle с carving — персонажи будут обтекать стол/полку,
+            // а не проходить сквозь.
+            var obstacle = go.AddComponent<NavMeshObstacle>();
+            obstacle.shape   = NavMeshObstacleShape.Box;
+            obstacle.center  = new Vector3(0f, size.y * 0.5f, 0f);
+            obstacle.size    = new Vector3(size.x, size.y, size.z);
+            obstacle.carving = true;
+        }
+
+        private static void AddCauldronLiquid(Transform parent)
+        {
+            var liquid = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            liquid.name = "Liquid";
+            liquid.transform.SetParent(parent, false);
+            liquid.transform.localPosition = new Vector3(0f, 0.85f, 0f);
+            liquid.transform.localScale    = new Vector3(0.55f, 0.05f, 0.55f);
+            var col = liquid.GetComponent<Collider>();
+            if (col != null) Object.Destroy(col);
+            var rend = liquid.GetComponent<MeshRenderer>();
+            if (rend != null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                var mat = new Material(shader);
+                mat.color = new Color(0.55f, 0.25f, 0.85f, 1f);
+                if (mat.HasProperty("_EmissionColor"))
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor("_EmissionColor", new Color(0.55f, 0.25f, 0.85f) * 0.6f);
+                }
+                rend.sharedMaterial = mat;
+            }
         }
 
         
 
                 private GameObject CreateAlchemist()
         {
-            var capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsule.name = "Alchemist";
-            capsule.transform.SetParent(transform, false);
-            capsule.transform.position = alchemistPos;
-            ApplyColor(capsule, new Color(0.85f, 0.75f, 0.95f));
+            // Пытаемся взять модель Мага — это наш алхимик.
+            var go = ModelLoader.TryInstantiateCharacter("Mage", transform);
+            bool isModel = (go != null);
+            if (!isModel)
+            {
+                go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                ApplyColor(go, new Color(0.85f, 0.75f, 0.95f));
+                go.transform.SetParent(transform, false);
+            }
+            go.name = "Alchemist";
+            // Модель: pivot у ступней — y=0. Капсула: pivot в центре — y из настройки.
+            go.transform.position = isModel
+                ? new Vector3(alchemistPos.x, 0f, alchemistPos.z)
+                : alchemistPos;
+            ModelLoader.StripColliders(go);
 
-                        // Убираем CapsuleCollider и помечаем капсулу как игнорируемую NavMesh-бейком.
-            var col = capsule.GetComponent<Collider>();
-            if (col != null) DestroyImmediate(col);
-
-            var mod = capsule.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+            var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
             mod.ignoreFromBuild = true;
 
-            return capsule;
+            return go;
         }
 
         private void BakeNavMesh()
@@ -241,6 +379,10 @@ namespace Alchemy.Gameplay
             agent.speed        = agentSpeed;
             agent.angularSpeed = 360f;
             agent.acceleration = 12f;
+            // Модели KayKit имеют pivot у ступней — обнуляем baseOffset, иначе
+            // персонаж парит над NavMesh.
+            bool isModel = alchemist.GetComponent<MeshFilter>() == null;
+            agent.baseOffset = isModel ? 0f : 1f;
 
             alchemist.AddComponent<AlchemistController>();
         }
@@ -260,8 +402,8 @@ namespace Alchemy.Gameplay
         {
             var queue = gameObject.AddComponent<CustomerQueue>();
             queue.Configure(
-                frontSlot: new Vector3(0f, 0f, 2f),
-                spacing:   1.2f,
+                frontSlot: new Vector3(0f, 0f, 2.5f),
+                spacing:   2.5f,    // модели KayKit шире капсул — больший шаг
                 max:       4);
 
             var spawner = gameObject.AddComponent<CustomerSpawner>();
@@ -431,16 +573,18 @@ namespace Alchemy.Gameplay
     
                 private GameObject CreateApprentice()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            // Подмастерье — Плут в капюшоне (RogueHooded), визуально отделён от мага-игрока и от клиентов.
+            var go = ModelLoader.TryInstantiateCharacter("RogueHooded", transform);
+            if (go == null)
+            {
+                go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                go.transform.SetParent(transform, false);
+                go.transform.localScale = new Vector3(0.8f, 0.9f, 0.8f);
+                ApplyColor(go, new Color(0.4f, 0.7f, 1f));
+            }
             go.name = "Apprentice";
-            go.transform.SetParent(transform, false);
-            go.transform.position   = new Vector3(2f, 1f, -2f);
-            go.transform.localScale = new Vector3(0.8f, 0.9f, 0.8f);
-
-            ApplyColor(go, new Color(0.4f, 0.7f, 1f));
-
-                       var col = go.GetComponent<Collider>();
-            if (col != null) DestroyImmediate(col);
+            go.transform.position = new Vector3(2f, 0f, -2f);
+            ModelLoader.StripColliders(go);
 
             var mod = go.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
             mod.ignoreFromBuild = true;

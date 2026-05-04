@@ -36,9 +36,9 @@ namespace Alchemy.Gameplay
         private void Awake()
         {
             agent  = GetComponent<NavMeshAgent>();
-            recipe = Resources.Load<RecipeSO>("Recipes/HealingPotion");
+            recipe = RecipeBook.Default;
             if (recipe == null)
-                Debug.LogError("[Apprentice] Не найден рецепт Resources/Recipes/HealingPotion.");
+                Debug.LogError("[Apprentice] Не найден базовый рецепт в Resources/Recipes.");
         }
 
                 private void Start()
@@ -103,6 +103,14 @@ namespace Alchemy.Gameplay
                 SellPotion();
 
             cycleIndex = (cycleIndex + 1) % Cycle.Length;
+
+            // На старте нового цикла (Shelf) подмастерье выбирает случайный рецепт.
+            if (cycleIndex == 0)
+            {
+                var next = RecipeBook.Random();
+                if (next != null) recipe = next;
+            }
+
             EnterMove();
         }
 

@@ -19,5 +19,8 @@ namespace Alchemy.Data
 
         [Header("Экономика")]
         [Min(1)] public long basePrice = 10;
+
+        [Header("Визуал")]
+        public Color iconColor = new Color(1f, 0.35f, 0.35f);
     }
 }

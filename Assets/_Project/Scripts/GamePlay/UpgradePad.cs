@@ -14,7 +14,10 @@ namespace Alchemy.Gameplay
         [SerializeField] private string upgradeId;
         [SerializeField] private float  interactionRadius = 1.6f;
         [SerializeField] private float  drainInterval     = 0.05f;
-        [SerializeField] private long   goldPerTick       = 1;
+        // Сколько секунд игрок должен простоять, чтобы оплатить покупку — фиксированно
+        // на любом уровне любого апгрейда. Раньше время = cost * drainInterval, на высоких
+        // уровнях это было слишком долго.
+        [SerializeField] private float  fillTime          = 4f;
         [SerializeField] private Vector3 labelOffset      = new Vector3(0f, 1.6f, 0f);
 
         private long  paid;
@@ -66,10 +69,14 @@ namespace Alchemy.Gameplay
             var economy = GameManager.Instance != null ? GameManager.Instance.Economy : null;
             if (economy == null) return;
 
+            // Сколько монет за тик, чтобы вся покупка длилась ~fillTime секунд независимо от cost.
+            int  ticksTotal     = Mathf.Max(1, Mathf.RoundToInt(fillTime / Mathf.Max(0.01f, drainInterval)));
+            long goldPerTickDyn = System.Math.Max(1L, (cost + ticksTotal - 1) / ticksTotal);
+
             drainAccum += Time.deltaTime;
             while (drainAccum >= drainInterval && paid < cost && economy.Gold > 0)
             {
-                long take = System.Math.Min(goldPerTick, cost - paid);
+                long take = System.Math.Min(goldPerTickDyn, cost - paid);
                 if (!economy.TrySpendGold(take)) break;
                 paid += take;
                 drainAccum -= drainInterval;

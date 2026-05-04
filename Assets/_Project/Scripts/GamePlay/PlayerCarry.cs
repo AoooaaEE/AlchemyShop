@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Alchemy.Utils;
 
 namespace Alchemy.Gameplay
 {
@@ -19,27 +20,36 @@ namespace Alchemy.Gameplay
         public CarryItem Item { get; private set; } = CarryItem.None;
         public event Action<CarryItem> OnItemChanged;
 
-        [SerializeField] private float visualHeight = 1.4f;
+        [SerializeField] private float visualHeight = 2.1f;
         [SerializeField] private float visualSize   = 0.3f;
 
-        private GameObject   visual;
-        private MeshRenderer visualRend;
+        private GameObject visual;
+        private bool       isModel;
 
         private void Awake()
         {
-            visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            // Сначала пробуем красивую 3D-бутылочку из KayKit; если её нет — куб-плейсхолдер.
+            visual = ModelLoader.TryInstantiateProp("PotionBottle", transform);
+            isModel = (visual != null);
+
+            if (!isModel)
+            {
+                visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                var col = visual.GetComponent<Collider>();
+                if (col != null) Destroy(col);
+                visual.transform.localScale = Vector3.one * visualSize;
+            }
+            else
+            {
+                ModelLoader.StripColliders(visual);
+                // KayKit-бутылочка ~0.4 ед. в высоту, увеличим чтобы было читаемо.
+                visual.transform.localScale = Vector3.one * 1.5f;
+            }
+
             visual.name = "CarryVisual";
-
-            // Убираем коллайдер чтоб не мешал движению/NavMesh.
-            var col = visual.GetComponent<Collider>();
-            if (col != null) Destroy(col);
-
             visual.transform.SetParent(transform, false);
             visual.transform.localPosition = new Vector3(0f, visualHeight, 0f);
-            visual.transform.localScale    = Vector3.one * visualSize;
             visual.SetActive(false);
-
-            visualRend = visual.GetComponent<MeshRenderer>();
         }
 
         public void SetItem(CarryItem item)
@@ -70,7 +80,7 @@ namespace Alchemy.Gameplay
                 _                       => Color.white
             };
 
-            if (visualRend != null) visualRend.material.color = color;
+            ModelLoader.Tint(visual, color, isModel ? 0.6f : 1f);
         }
     }
 }

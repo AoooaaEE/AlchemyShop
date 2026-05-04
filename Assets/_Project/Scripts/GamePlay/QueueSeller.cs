@@ -16,13 +16,13 @@ namespace Alchemy.Gameplay
         [SerializeField] private Vector3 barOffset       = new Vector3(0f, 1.5f, 0f);
 
         private float      timer;
-        private RecipeSO   recipe;
+        private RecipeSO   fallbackRecipe;
         private GameObject barRoot;
         private Image      barFill;
 
         private void Awake()
         {
-            recipe = Resources.Load<RecipeSO>("Recipes/HealingPotion");
+            fallbackRecipe = RecipeBook.Default;
         }
 
         private void Start()
@@ -56,14 +56,18 @@ namespace Alchemy.Gameplay
 
         private void Sell(PlayerCarry carry)
         {
+            // Рецепт переднего клиента определяет цену продажи.
+            var front = CustomerQueue.Instance.PeekFront();
+            var r = (front != null && front.Recipe != null) ? front.Recipe : fallbackRecipe;
+
             CustomerQueue.Instance.ServeFront();
 
             var economy = GameManager.Instance != null ? GameManager.Instance.Economy : null;
-            if (economy != null && recipe != null)
+            if (economy != null && r != null)
             {
-                long price = economy.GetSellPrice(recipe.basePrice);
+                long price = economy.GetSellPrice(r.basePrice);
                 economy.AddGold(price);
-                Debug.Log($"[Player] Продал «{recipe.displayName}» за {price}. Всего золота: {economy.Gold}");
+                Debug.Log($"[Player] Продал «{r.displayName}» за {price}. Всего золота: {economy.Gold}");
             }
 
             carry.SetItem(CarryItem.None);
