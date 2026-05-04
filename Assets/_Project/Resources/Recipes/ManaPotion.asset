@@ -15,7 +15,7 @@ MonoBehaviour:
   id: mana_potion
   displayName: "\u0417\u0435\u043B\u044C\u0435 \u043C\u0430\u043D\u044B"
   pickupTime: 0.6
-  brewTime: 2.5
+  brewTime: 3
   bottleTime: 0.6
   basePrice: 20
   iconColor: {r: 0.35, g: 0.55, b: 1, a: 1}
