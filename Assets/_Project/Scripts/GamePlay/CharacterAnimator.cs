@@ -25,12 +25,14 @@ namespace Alchemy.Gameplay
         private Transform              speedRef;  // по чему мерим скорость, если нет NavMeshAgent
         private Vector3                lastPos;
         private float                  trackedSpeed;
+        private float                  debugTimer;
 
         private void Awake()
         {
             animator = GetComponent<Animator>();
-            // Опорная точка для измерения скорости — корень иерархии (обычно сам персонаж/игрок).
-            speedRef = transform.root;
+            // Меряем по собственному world-положению: при движении родителя оно тоже меняется.
+            // (transform.root указывал бы на статичный корень сцены — там скорость всегда 0.)
+            speedRef = transform;
             lastPos  = speedRef.position;
         }
 
@@ -70,7 +72,7 @@ namespace Alchemy.Gameplay
 
             // Скорость всегда меряем по transform-дельте — единый код для NPC и игрока.
             // (У игрока NavMeshAgent.velocity не обновляется, т.к. он двигается через agent.Move().)
-            if (speedRef == null) speedRef = transform.root;
+            if (speedRef == null) speedRef = transform;
             Vector3 pos = speedRef.position;
             Vector3 delta = pos - lastPos;
             delta.y = 0f;
@@ -85,6 +87,14 @@ namespace Alchemy.Gameplay
 
             mixer.SetInputWeight(0, 1f - blend);
             mixer.SetInputWeight(1, blend);
+
+            debugTimer += Time.deltaTime;
+            if (debugTimer > 2f)
+            {
+                debugTimer = 0f;
+                Debug.Log("[CharacterAnimator] " + name + ": speed=" +
+                          speed.ToString("F2") + ", blend=" + blend.ToString("F2"));
+            }
         }
 
         private void OnDestroy()
