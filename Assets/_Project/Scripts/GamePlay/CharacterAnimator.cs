@@ -41,8 +41,11 @@ namespace Alchemy.Gameplay
                 Debug.LogWarning($"[CharacterAnimator] {name}: оба клипа null, пропускаю.");
                 return;
             }
-            Debug.Log($"[CharacterAnimator] {name}: Init idle={idle?.name}, walk={walk?.name}, " +
-                      $"animator={(animator != null ? \"OK\" : \"null\")}");
+            string idleN = idle != null ? idle.name : "null";
+            string walkN = walk != null ? walk.name : "null";
+            string animOk = animator != null ? "OK" : "null";
+            Debug.Log("[CharacterAnimator] " + name + ": Init idle=" + idleN +
+                      ", walk=" + walkN + ", animator=" + animOk);
 
             graph = PlayableGraph.Create("CharacterAnim_" + name);
             graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
