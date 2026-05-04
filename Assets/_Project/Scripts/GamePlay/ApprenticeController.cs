@@ -12,11 +12,12 @@ namespace Alchemy.Gameplay
     [RequireComponent(typeof(NavMeshAgent))]
     public class ApprenticeController : MonoBehaviour
     {
-        public enum State { MoveTo, Working }
+        public enum State { Idle, MoveTo, Working }
 
         [Header("Поведение")]
         [SerializeField, Min(0.1f)]            private float arriveDist  = 0.4f;
         [SerializeField, Range(0.1f, 1.5f)]    private float speedFactor = 0.7f;
+        [SerializeField, Min(0.1f)]            private float idleRetryInterval = 1f;
 
         private static readonly WorkstationType[] Cycle =
         {
@@ -30,6 +31,7 @@ namespace Alchemy.Gameplay
 
         private State state;
         private float workTimer;
+        private float idleTimer;
         private int   cycleIndex;
         private bool  ready;
 
@@ -56,6 +58,16 @@ namespace Alchemy.Gameplay
 
             switch (state)
             {
+                case State.Idle:
+                    // Стоим до тех пор, пока все 3 станции не построены (Shelf/Cauldron/Table).
+                    idleTimer -= Time.deltaTime;
+                    if (idleTimer <= 0f)
+                    {
+                        idleTimer = idleRetryInterval;
+                        if (HasAllStations()) EnterMove();
+                    }
+                    break;
+
                 case State.MoveTo:
                     if (!agent.pathPending && agent.remainingDistance <= arriveDist)
                         EnterWorking();
@@ -68,10 +80,24 @@ namespace Alchemy.Gameplay
             }
         }
 
+        private static bool HasAllStations()
+        {
+            return Workstation.Find(WorkstationType.Shelf)         != null
+                && Workstation.Find(WorkstationType.Cauldron)      != null
+                && Workstation.Find(WorkstationType.BottlingTable) != null;
+        }
+
+        private void EnterIdle()
+        {
+            state     = State.Idle;
+            idleTimer = idleRetryInterval;
+            if (agent != null && agent.isOnNavMesh) agent.ResetPath();
+        }
+
                 private void EnterMove()
         {
             var ws = Workstation.Find(Cycle[cycleIndex]);
-            if (ws == null) return;
+            if (ws == null) { EnterIdle(); return; }
 
             // Сдвиг точки на 0.8м в сторону, чтобы не толкаться с алхимиком.
             Vector3 target = ws.InteractionPosition + new Vector3(0.8f, 0f, 0f);
@@ -81,6 +107,10 @@ namespace Alchemy.Gameplay
             {
                 state = State.MoveTo;
                 agent.SetDestination(hit.position);
+            }
+            else
+            {
+                EnterIdle();
             }
         }
         private void EnterWorking()
