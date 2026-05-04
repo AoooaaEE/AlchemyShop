@@ -14,8 +14,6 @@ namespace Alchemy.Gameplay
     [RequireComponent(typeof(Animator))]
     public class CharacterAnimator : MonoBehaviour
     {
-        [SerializeField] private string idleClipName = "Idle";
-        [SerializeField] private string walkClipName = "Running_A";
         [SerializeField] private float  velocityThreshold = 0.15f;
         [SerializeField] private float  blendTime = 0.18f;
 
