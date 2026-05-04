@@ -18,5 +18,5 @@ MonoBehaviour:
   valuePerLevel: 0
   secondaryValuePerLevel: 0
   maxLevel: 1
-  baseCost: 50
+  baseCost: 0
   costGrowth: 1

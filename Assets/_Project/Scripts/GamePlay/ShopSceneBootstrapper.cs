@@ -25,7 +25,7 @@ namespace Alchemy.Gameplay
         [SerializeField] private float   lightIntensity = 1f;
 
         [Header("Алхимик (плейсхолдер)")]
-        [SerializeField] private Vector3 alchemistPos = new Vector3(0, 1, 4);
+        [SerializeField] private Vector3 alchemistPos = new Vector3(0, 1, -14);
         [SerializeField] private float   agentRadius  = 0.4f;
         [SerializeField] private float   agentHeight  = 2f;
         [SerializeField] private float   agentSpeed   = 3.5f;
@@ -51,6 +51,7 @@ namespace Alchemy.Gameplay
             var camGo = CreateCamera();
             CreateLight();
             CreateForest();
+            CreatePath();
             CreateWorkstations();
             CreateCustomerSystem();
             CreateQueueSeller();
@@ -604,16 +605,15 @@ namespace Alchemy.Gameplay
         }
 
         /// <summary>
-        /// Раскидывает деревья и пни по периметру поляны, чтобы старт ощущался
-        /// как лесная полянка, а не голая площадка.
+        /// Раскидывает деревья в два «пятна»: по периметру полянки + вокруг спавна
+        /// игрока, чтобы он стартовал «в лесу» и из леса свыводила тропинка к хижине.
         /// </summary>
         private void CreateForest()
         {
-            // Перечень деревьев, которые мы скачали с KayKit Medieval Hexagon Pack.
             string[] big   = { "trees_A_large",  "trees_B_medium", "trees_A_medium" };
             string[] small = { "trees_A_small",  "trees_B_cut",    "trees_A_medium" };
 
-            // Кольцо больших деревьев по краю поляны.
+            // 1) Кольцо вокруг поляны (рабочей зоны).
             int bigCount = 14;
             float ringR  = 11f;
             for (int i = 0; i < bigCount; i++)
@@ -622,23 +622,70 @@ namespace Alchemy.Gameplay
                 float jit = Random.Range(-1.2f, 1.2f);
                 float r   = ringR + jit;
                 var pos   = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
-                // Не ставим дерево перед спавном клиентов и на пути к очереди.
-                if (Mathf.Abs(pos.x) < 2.5f && pos.z > 7f) continue;
+                // Открываем два коридора:
+                //   - на север (z>7): оттуда приходят клиенты
+                //   - на юг (z<-7): туда ведёт тропинка из леса от игрока
+                if (Mathf.Abs(pos.x) < 2.5f && pos.z >  7f) continue;
+                if (Mathf.Abs(pos.x) < 2.5f && pos.z < -7f) continue;
                 SpawnTree(big[Random.Range(0, big.Length)], pos,
                           yaw: Random.Range(0f, 360f),
                           scale: Random.Range(0.95f, 1.25f));
             }
 
-            // Несколько мелких пней/кустов внутри.
+            // 2) Густой лес вокруг спавна игрока (игрок стоит «в лесу»).
+            Vector3 spawn = alchemistPos;
+            int   spawnCount = 18;
+            float spawnR     = 4.5f;
+            for (int i = 0; i < spawnCount; i++)
+            {
+                float a   = (i / (float)spawnCount) * Mathf.PI * 2f;
+                float r   = spawnR + Random.Range(-1.0f, 1.5f);
+                var pos   = new Vector3(spawn.x + Mathf.Cos(a) * r, 0f, spawn.z + Mathf.Sin(a) * r);
+                // Открытый коридор на север (к хижине).
+                if (Mathf.Abs(pos.x) < 2.0f && pos.z > spawn.z + 1f) continue;
+                bool useBig = Random.value < 0.55f;
+                var arr     = useBig ? big : small;
+                SpawnTree(arr[Random.Range(0, arr.Length)], pos,
+                          yaw: Random.Range(0f, 360f),
+                          scale: Random.Range(useBig ? 0.95f : 0.7f, useBig ? 1.25f : 1.0f));
+            }
+
+            // 3) Несколько мелких пней в углах поляны.
             for (int i = 0; i < 6; i++)
             {
                 var pos = new Vector3(Random.Range(-9f, 9f), 0f, Random.Range(-9f, 9f));
-                // Подальше от рабочего пятна (-7..6 по z) и центра.
                 if (Mathf.Abs(pos.x) < 3.5f) continue;
                 if (pos.z > -1f && pos.z < 6f) continue;
                 SpawnTree(small[Random.Range(0, small.Length)], pos,
                           yaw: Random.Range(0f, 360f),
                           scale: Random.Range(0.7f, 1f));
+            }
+        }
+
+        /// <summary>
+        /// Каменная тропинка из плиток из леса (спавн игрока) к паду хижины.
+        /// </summary>
+        private void CreatePath()
+        {
+            float startZ = alchemistPos.z + 1.5f; // немного впереди игрока
+            float endZ   = HutPos.z       - 1.0f; // чуть не доходя до пада
+            int   steps  = Mathf.Max(2, Mathf.RoundToInt((endZ - startZ) / 1.4f));
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                float z = Mathf.Lerp(startZ, endZ, t);
+                float x = Mathf.Sin(t * Mathf.PI * 0.7f) * 0.55f; // лёгкая змейка
+                var tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                tile.name = "PathTile";
+                tile.transform.SetParent(transform, false);
+                tile.transform.position   = new Vector3(x, 0.025f, z);
+                tile.transform.localScale = new Vector3(1.05f, 0.05f, 0.7f);
+                tile.transform.rotation   = Quaternion.Euler(0f, Random.Range(-25f, 25f), 0f);
+                ApplyColor(tile, new Color(0.42f, 0.36f, 0.28f));
+                var col = tile.GetComponent<Collider>();
+                if (col != null) DestroyImmediate(col);
+                var mod = tile.AddComponent<Unity.AI.Navigation.NavMeshModifier>();
+                mod.ignoreFromBuild = true;
             }
         }
 
