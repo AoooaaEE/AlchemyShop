@@ -103,6 +103,14 @@ namespace Alchemy.Gameplay
                 SellPotion();
 
             cycleIndex = (cycleIndex + 1) % Cycle.Length;
+
+            // На старте нового цикла (Shelf) подмастерье выбирает случайный рецепт.
+            if (cycleIndex == 0)
+            {
+                var next = RecipeBook.Random();
+                if (next != null) recipe = next;
+            }
+
             EnterMove();
         }
 

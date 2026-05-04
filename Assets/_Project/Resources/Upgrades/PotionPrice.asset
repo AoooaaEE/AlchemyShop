@@ -15,7 +15,7 @@ MonoBehaviour:
   id: potion_price
   displayName: "\u0426\u0435\u043D\u0430 \u0437\u0435\u043B\u0438\u0439"
   type: 0
-  valuePerLevel: 0.1
-  maxLevel: 10
-  baseCost: 10
-  costGrowth: 1.5
+  valuePerLevel: 0.25
+  maxLevel: 15
+  baseCost: 25
+  costGrowth: 1.45
