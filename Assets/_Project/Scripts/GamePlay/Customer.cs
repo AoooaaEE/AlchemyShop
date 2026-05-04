@@ -29,6 +29,8 @@ namespace Alchemy.Gameplay
 
         public void SetExit(Vector3 worldPos) => exitPosition = worldPos;
 
+        public void SetIconOffsetY(float y) => iconOffset = new Vector3(0f, y, 0f);
+
         public void SetRecipe(RecipeSO r)
         {
             recipe = r;
