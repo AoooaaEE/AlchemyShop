@@ -32,6 +32,7 @@ namespace Alchemy.Gameplay
         [SerializeField] private float agentSpeed  = 2.5f;
 
         private float timer;
+        private bool  spawningEnabled = true;
 
         public void Configure(Vector3 spawn, Vector3 exit, float interval)
         {
@@ -41,8 +42,18 @@ namespace Alchemy.Gameplay
             timer         = spawnInterval * 0.4f; // первый клиент быстрее
         }
 
+        /// <summary>
+        /// Управляет, спавнить ли клиентов сейчас. До открытия лавки клиентов нет.
+        /// </summary>
+        public void SetSpawningEnabled(bool enabled)
+        {
+            spawningEnabled = enabled;
+            if (enabled) timer = Mathf.Min(timer, 1f); // первый сразу после открытия
+        }
+
         private void Update()
         {
+            if (!spawningEnabled) return;
             if (CustomerQueue.Instance == null) return;
             if (!CustomerQueue.Instance.HasFreeSlot) return;
 

@@ -14,6 +14,8 @@ namespace Alchemy.Utils
         public const string CharactersPath = "Models/Characters/";
         public const string PropsPath      = "Models/Props/";
         public const string FloorPath      = "Models/Floor/";
+        public const string BuildingsPath  = "Models/Buildings/";
+        public const string NaturePath     = "Models/Nature/";
 
         /// <summary>
         /// Пытается загрузить и заинстанцировать модель из Resources/{path}{name}.
@@ -81,6 +83,36 @@ namespace Alchemy.Utils
 
         public static GameObject TryInstantiateProp(string name, Transform parent = null)
             => TryInstantiate(PropsPath, name, parent);
+
+        public static GameObject TryInstantiateBuilding(string name, Transform parent = null)
+            => TryInstantiate(BuildingsPath, name, parent);
+
+        public static GameObject TryInstantiateNature(string name, Transform parent = null)
+            => TryInstantiate(NaturePath, name, parent);
+
+        /// <summary>
+        /// «Призрачный» вид модели для пада постройки: яркий тинт + слабое свечение.
+        /// Без прозрачности, чтобы стабильно работало в URP без подгрузки шейдеров.
+        /// </summary>
+        public static void MakeGhost(GameObject go, Color tint, float alpha = 0.45f)
+        {
+            if (go == null) return;
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers)
+            {
+                if (r == null) continue;
+                var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                var mat    = new Material(shader);
+                mat.color  = new Color(tint.r, tint.g, tint.b, 1f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", mat.color);
+                if (mat.HasProperty("_EmissionColor"))
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor("_EmissionColor", tint * 0.6f);
+                }
+                r.sharedMaterial = mat;
+            }
+        }
 
         /// <summary>
         /// Перекрашивает все рендереры объекта в указанный цвет.
