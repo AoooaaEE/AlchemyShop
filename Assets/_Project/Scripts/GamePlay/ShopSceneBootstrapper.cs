@@ -12,7 +12,7 @@ namespace Alchemy.Gameplay
     public class ShopSceneBootstrapper : MonoBehaviour
     {
         [Header("Пол")]
-        [SerializeField] private Vector3 floorScale = new Vector3(5, 1, 5);
+        [SerializeField] private Vector3 floorScale = new Vector3(6, 1, 6);
 
         [Header("Камера")]
         [SerializeField] private Vector3 cameraPos = new Vector3(0, 12, -8);
@@ -25,7 +25,7 @@ namespace Alchemy.Gameplay
         [SerializeField] private float   lightIntensity = 1f;
 
         [Header("Алхимик (плейсхолдер)")]
-        [SerializeField] private Vector3 alchemistPos = new Vector3(0, 1, -14);
+        [SerializeField] private Vector3 alchemistPos = new Vector3(0, 1, -18);
         [SerializeField] private float   agentRadius  = 0.4f;
         [SerializeField] private float   agentHeight  = 2f;
         [SerializeField] private float   agentSpeed   = 3.5f;
@@ -33,13 +33,14 @@ namespace Alchemy.Gameplay
                 // Активный подмастерье в сцене (если куплен апгрейд).
         private GameObject apprenticeRef;
 
-        // Позиции рабочих мест в лавке. Реальные станции появляются только
-        // после покупки соответствующего «build_*» апгрейда; до этого на их
-        // месте стоит пад постройки с призраком и ценой.
+        // Поляна — открытый круг (без деревьев), радиусом ClearingR с центром в ClearingCenter.
+        // Хижина и все рабочие столы появляются строго внутри неё.
+        private static readonly Vector3 ClearingCenter = new Vector3(0f, 0f, -3f);
+        private const float ClearingR = 9f;
+        private static readonly Vector3 HutPos      = new Vector3( 0f,   0f, -7f);
         private static readonly Vector3 ShelfPos    = new Vector3(-5.5f, 0f, -3f);
         private static readonly Vector3 CauldronPos = new Vector3( 0f,   0f, -3.5f);
         private static readonly Vector3 TablePos    = new Vector3( 5.5f, 0f, -3f);
-        private static readonly Vector3 HutPos      = new Vector3( 0f,   0f, -7f);
 
         // Ссылка на пад-постройку для каждого id (чтобы спрятать призрак при покупке).
         private readonly System.Collections.Generic.Dictionary<string, GameObject> buildSlots
@@ -564,57 +565,56 @@ namespace Alchemy.Gameplay
         }
 
         /// <summary>
-        /// Раскидывает деревья в два «пятна»: по периметру полянки + вокруг спавна
-        /// игрока, чтобы он стартовал «в лесу» и из леса свыводила тропинка к хижине.
+        /// Раскидывает деревья по всей карте кроме поляны (большой круг в центре),
+        /// тропы (узкий коридор от спавна на юг к поляне) и северного коридора (откуда
+        /// приходят клиенты). Игрок спавнится в плотной чаще.
         /// </summary>
         private void CreateForest()
         {
             // Только высокие деревья — игрок стоит «в высоком лесу».
             string[] big = { "trees_A_large", "trees_B_medium", "trees_A_medium" };
+            const float pathHalfWidth   = 1.8f; // полуширина свободной тропы
+            const float spawnClearR     = 1.4f; // вокруг точки спавна — пусто
+            const float clearingPad     = 1.5f; // запас вокруг поляны (без деревьев)
 
-            // 1) Внешнее плотное кольцо вокруг всей рабочей зоны.
-            int   ringCount = 22;
-            float ringR     = 13f;
-            for (int i = 0; i < ringCount; i++)
+            // Грид-сэмплинг — гарантирует плотный, но не слипающийся лес.
+            // Шаг ~2.6 ед даёт хорошую плотность при крупном масштабе деревьев.
+            const float step = 2.6f;
+            const float halfMap = 22f;
+            for (float x = -halfMap; x <= halfMap; x += step)
             {
-                float a   = (i / (float)ringCount) * Mathf.PI * 2f;
-                float jit = Random.Range(-1.2f, 1.2f);
-                float r   = ringR + jit;
-                var pos   = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
-                // Коридор на север — оттуда приходят клиенты.
-                if (Mathf.Abs(pos.x) < 2.8f && pos.z >  7f) continue;
-                // Коридор на юг — туда уходит тропинка к спавну игрока.
-                if (Mathf.Abs(pos.x) < 2.8f && pos.z < -7f) continue;
-                SpawnTree(big[Random.Range(0, big.Length)], pos,
-                          yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(2.0f, 2.8f));
-            }
+                for (float z = -halfMap; z <= halfMap; z += step)
+                {
+                    float jx = x + Random.Range(-0.5f, 0.5f);
+                    float jz = z + Random.Range(-0.5f, 0.5f);
+                    var pos = new Vector3(jx, 0f, jz);
 
-            // 2) Плотный высокий лес вокруг спавна игрока.
-            Vector3 spawn = alchemistPos;
-            int   spawnCount = 26;
-            for (int i = 0; i < spawnCount; i++)
-            {
-                float a = (i / (float)spawnCount) * Mathf.PI * 2f;
-                float r = Random.Range(3.5f, 7.0f);
-                var pos = new Vector3(spawn.x + Mathf.Cos(a) * r, 0f, spawn.z + Mathf.Sin(a) * r);
-                // Открытый коридор на север (к хижине).
-                if (Mathf.Abs(pos.x) < 2.2f && pos.z > spawn.z + 0.5f) continue;
-                SpawnTree(big[Random.Range(0, big.Length)], pos,
-                          yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(2.2f, 3.2f));
-            }
+                    // 1) Внутри поляны — никаких деревьев.
+                    if (Vector3.Distance(pos, ClearingCenter) < ClearingR + clearingPad) continue;
 
-            // 3) Заполняем углы карты редкими большими деревьями (фон).
-            for (int i = 0; i < 14; i++)
-            {
-                var pos = new Vector3(Random.Range(-18f, 18f), 0f, Random.Range(-18f, 18f));
-                // Не пускаем в саму поляну/коридоры.
-                if (Mathf.Abs(pos.x) < 8f && Mathf.Abs(pos.z) < 8f) continue;
-                if (Mathf.Abs(pos.x) < 3f) continue;
-                SpawnTree(big[Random.Range(0, big.Length)], pos,
-                          yaw: Random.Range(0f, 360f),
-                          scale: Random.Range(2.2f, 3.0f));
+                    // 2) Тропа от поляны до спавна игрока — узкий пустой коридор по оси X≈0.
+                    //    Идёт от южного края поляны (z = ClearingCenter.z - ClearingR) до спавна.
+                    float pathZSouth = ClearingCenter.z - ClearingR;
+                    float pathZNorth = pathZSouth + clearingPad;
+                    if (pos.z < pathZNorth && pos.z > alchemistPos.z - 1f &&
+                        Mathf.Abs(pos.x - alchemistPos.x) < pathHalfWidth) continue;
+
+                    // 3) Сама точка спавна — пятачок без деревьев чтобы игрок видел вокруг себя.
+                    if (Vector3.Distance(pos, alchemistPos) < spawnClearR) continue;
+
+                    // 4) Северный коридор — оттуда приходят клиенты.
+                    float customerCorridorZ = ClearingCenter.z + ClearingR;
+                    if (pos.z > customerCorridorZ - clearingPad && Mathf.Abs(pos.x) < 2.8f) continue;
+
+                    // Плотность: ближе к карте = чаще, дальние углы — реже.
+                    float distFromCenter = pos.magnitude;
+                    float skipChance = distFromCenter > 16f ? 0.6f : 0.15f;
+                    if (Random.value < skipChance) continue;
+
+                    SpawnTree(big[Random.Range(0, big.Length)], pos,
+                              yaw:   Random.Range(0f, 360f),
+                              scale: Random.Range(2.0f, 3.0f));
+                }
             }
         }
 
