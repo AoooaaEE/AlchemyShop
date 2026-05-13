@@ -17,7 +17,7 @@ namespace StickEvolve.Bootstrap
     public class PrototypeBootstrapper : MonoBehaviour
     {
         [Header("Конфиг")]
-        [SerializeField] private int wavesToPlay = 5;
+        [SerializeField] private int wavesToPlay = 50;
 
         private StickGame _game;
         private WaveSpawner _spawner;
@@ -188,6 +188,13 @@ namespace StickEvolve.Bootstrap
             var h = SpawnHeroAt(new Vector3(_heroX, 0f, 0f), new Color(0.4f, 0.7f, 1f));
             _heroes.Add(h);
             HookHeroDeath(h);
+
+            // Если из карточного прогресса уже накоплены дополнительные герои — спавним их.
+            var defaults = CardProgression.Compute();
+            for (int i = 0; i < defaults.extraHeroes; i++)
+            {
+                SpawnExtraHero();
+            }
         }
 
         private Hero SpawnExtraHero()
@@ -214,15 +221,13 @@ namespace StickEvolve.Bootstrap
             col.isTrigger = true;
 
             go.AddComponent<TeamMember>();
-            var hp = go.AddComponent<Health>();
-            hp.Configure(20f);
+            go.AddComponent<Health>();
 
             var hero = go.AddComponent<Hero>();
-            hero.damage = 1f;
-            hero.fireRate = 1.5f;
-            hero.range = 7f;
-            hero.bulletSpeed = 14f;
             hero.bulletColor = new Color(Mathf.Clamp01(tint.r + 0.1f), Mathf.Clamp01(tint.g + 0.2f), 1f);
+
+            // Применяем накопленные апгрейды из карт (или базу при чистом сейве).
+            CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
         }
 
@@ -258,6 +263,7 @@ namespace StickEvolve.Bootstrap
         private void OnCardPicked(CardSO card)
         {
             CardEffect.Apply(card);
+            _game.PersistSave();
             // Стартуем следующую волну
             _game.NotifyWaveStarted(_spawner.waves[_spawner.CurrentWaveIndex].waveNumber);
             _spawner.StartNextWave();

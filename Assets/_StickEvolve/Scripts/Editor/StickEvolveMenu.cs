@@ -77,6 +77,14 @@ namespace StickEvolve.EditorTools
                 Debug.Log("[StickEvolve] Сейв-файла нет.");
             }
         }
+
+        [MenuItem("StickEvolve/Show Save Path", priority = 21)]
+        public static void ShowSavePath()
+        {
+            var path = Path.Combine(Application.persistentDataPath, "stickevolve_save.json");
+            Debug.Log($"[StickEvolve] Save path: {path}\nExists: {File.Exists(path)}");
+            EditorUtility.RevealInFinder(path);
+        }
     }
 }
 #endif

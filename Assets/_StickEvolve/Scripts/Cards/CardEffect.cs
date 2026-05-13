@@ -4,8 +4,10 @@ using UnityEngine;
 namespace StickEvolve.Cards
 {
     /// <summary>
-    /// Применяет эффект карты к существующим героям. PrototypeBootstrapper передаёт сюда
-    /// фабрику для спавна нового героя при эффекте SpawnExtraHero.
+    /// Применение карты:
+    /// 1) обновить CardProgression (уровень + pity).
+    /// 2) сделать одноразовые эффекты (FullHeal лечит сейчас, SpawnExtraHero дёргает спавнер).
+    /// 3) пересчитать накопленные статы и применить их ко всем живым героям.
     /// </summary>
     public static class CardEffect
     {
@@ -15,48 +17,62 @@ namespace StickEvolve.Cards
         public static void Apply(CardSO card)
         {
             if (card == null) return;
-            var heroes = HeroRegistry.Instance.Alive;
 
-            switch (card.effect)
+            CardProgression.RegisterPick(card);
+
+            if (card.effect == CardEffectKind.FullHeal)
             {
-                case CardEffectKind.DamageMultiplier:
-                    foreach (var h in heroes) if (h != null) h.damage *= card.value;
-                    break;
-                case CardEffectKind.FireRateMultiplier:
-                    foreach (var h in heroes) if (h != null) h.fireRate *= card.value;
-                    break;
-                case CardEffectKind.RangeAdd:
-                    foreach (var h in heroes) if (h != null) h.range += card.value;
-                    break;
-                case CardEffectKind.MaxHpMultiplier:
-                    foreach (var h in heroes)
-                    {
-                        if (h == null) continue;
-                        var hp = h.GetComponent<Health>();
-                        if (hp == null) continue;
-                        hp.Configure(hp.MaxHp * card.value, fullHeal: true);
-                    }
-                    break;
-                case CardEffectKind.CritChanceAdd:
-                    foreach (var h in heroes) if (h != null) h.critChance = Mathf.Clamp01(h.critChance + card.value);
-                    break;
-                case CardEffectKind.CritMultiplierAdd:
-                    foreach (var h in heroes) if (h != null) h.critMultiplier += card.value;
-                    break;
-                case CardEffectKind.BulletSpeedAdd:
-                    foreach (var h in heroes) if (h != null) h.bulletSpeed += card.value;
-                    break;
-                case CardEffectKind.SpawnExtraHero:
-                    ExtraHeroSpawner?.Invoke();
-                    break;
-                case CardEffectKind.FullHeal:
-                    foreach (var h in heroes)
-                    {
-                        if (h == null) continue;
-                        var hp = h.GetComponent<Health>();
-                        hp?.Heal(hp.MaxHp);
-                    }
-                    break;
+                FullHealAlive();
+            }
+            else if (card.effect == CardEffectKind.SpawnExtraHero)
+            {
+                int n = Mathf.Max(1, Mathf.RoundToInt(card.value));
+                for (int i = 0; i < n; i++) ExtraHeroSpawner?.Invoke();
+            }
+
+            ApplyDefaultsToAllAlive();
+        }
+
+        public static void ApplyDefaultsToAllAlive()
+        {
+            var d = CardProgression.Compute();
+            var heroes = HeroRegistry.Instance.Alive;
+            for (int i = 0; i < heroes.Count; i++)
+            {
+                var h = heroes[i];
+                if (h == null) continue;
+                ApplyDefaultsTo(h, d, fullHeal: false);
+            }
+        }
+
+        public static void ApplyDefaultsToNewHero(Hero hero)
+        {
+            if (hero == null) return;
+            var d = CardProgression.Compute();
+            ApplyDefaultsTo(hero, d, fullHeal: true);
+        }
+
+        private static void ApplyDefaultsTo(Hero h, HeroDefaults d, bool fullHeal)
+        {
+            h.damage = d.damage;
+            h.fireRate = d.fireRate;
+            h.range = d.range;
+            h.bulletSpeed = d.bulletSpeed;
+            h.critChance = d.critChance;
+            h.critMultiplier = d.critMultiplier;
+            var hp = h.GetComponent<Health>();
+            if (hp != null) hp.Configure(d.maxHp, fullHeal);
+        }
+
+        private static void FullHealAlive()
+        {
+            var heroes = HeroRegistry.Instance.Alive;
+            for (int i = 0; i < heroes.Count; i++)
+            {
+                var h = heroes[i];
+                if (h == null) continue;
+                var hp = h.GetComponent<Health>();
+                if (hp != null) hp.Heal(hp.MaxHp);
             }
         }
     }

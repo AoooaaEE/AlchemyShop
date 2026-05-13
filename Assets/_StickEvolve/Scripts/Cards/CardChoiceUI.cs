@@ -114,6 +114,32 @@ namespace StickEvolve.Cards
             var desc = MakeText("Desc", card.description, 22, new Vector2(0f, -80f), new Vector2(240f, 120f), TextAlignmentOptions.Center);
             desc.transform.SetParent(go.transform, false);
             desc.color = new Color(0.9f, 0.9f, 0.9f);
+
+            // Бейдж уровня (Lv N → Lv N+1) если карта уже была взята.
+            int curLevel = CardProgression.GetLevel(card.id);
+            if (curLevel > 0)
+            {
+                var badge = new GameObject("LvBadge");
+                badge.transform.SetParent(go.transform, false);
+                var brt = badge.AddComponent<RectTransform>();
+                brt.anchorMin = new Vector2(1f, 1f);
+                brt.anchorMax = new Vector2(1f, 1f);
+                brt.pivot = new Vector2(1f, 1f);
+                brt.anchoredPosition = new Vector2(-12f, -12f);
+                brt.sizeDelta = new Vector2(96f, 36f);
+                var bImg = badge.AddComponent<Image>();
+                bImg.color = new Color(0f, 0f, 0f, 0.55f);
+                bImg.raycastTarget = false;
+
+                var lvText = MakeText("Lv", $"Lv {curLevel} → {curLevel + 1}", 18, Vector2.zero, new Vector2(96f, 36f), TextAlignmentOptions.Center);
+                lvText.transform.SetParent(badge.transform, false);
+                var lvRT = lvText.rectTransform;
+                lvRT.anchorMin = Vector2.zero;
+                lvRT.anchorMax = Vector2.one;
+                lvRT.offsetMin = Vector2.zero;
+                lvRT.offsetMax = Vector2.zero;
+                lvText.color = new Color(1f, 0.9f, 0.4f);
+            }
         }
 
         private TextMeshProUGUI MakeText(string label, string text, float fontSize, Vector2 pos, Vector2 size, TextAlignmentOptions align)
