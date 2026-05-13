@@ -1,4 +1,5 @@
 using System;
+using StickEvolve.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -39,6 +40,9 @@ namespace StickEvolve.UI
             var title = MakeText(_panel.transform, "Title", "GAME OVER", 72, TextAlignmentOptions.Center, new Vector2(0f, 160f), new Vector2(800f, 100f));
             title.color = new Color(0.95f, 0.3f, 0.3f);
 
+            AddSpark(_panel.transform, "SparkL", new Vector2(-250f, 162f), 70f, new Color(1f, 0.55f, 0.20f, 0.8f));
+            AddSpark(_panel.transform, "SparkR", new Vector2(250f, 162f), 70f, new Color(1f, 0.55f, 0.20f, 0.8f));
+
             _stats = MakeText(_panel.transform, "Stats", "Достигнута волна: 0", 32, TextAlignmentOptions.Center, new Vector2(0f, 40f), new Vector2(700f, 60f));
             _stats.color = Color.white;
 
@@ -63,6 +67,22 @@ namespace StickEvolve.UI
             btnText.raycastTarget = false;
 
             _panel.SetActive(false);
+        }
+
+        private void AddSpark(Transform parent, string name, Vector2 pos, float size, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(size, size);
+            var img = go.AddComponent<Image>();
+            img.sprite = SpriteFactory.Spark();
+            img.color = color;
+            img.raycastTarget = false;
         }
 
         public void Show(int reachedWave)
