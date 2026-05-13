@@ -205,25 +205,9 @@ namespace StickEvolve.Bootstrap
             var go = new GameObject("Hero");
             go.transform.position = pos;
 
-            // Body
-            var body = new GameObject("Body");
-            body.transform.SetParent(go.transform, false);
-            var bsr = body.AddComponent<SpriteRenderer>();
-            bsr.sprite = SpriteFactory.White();
-            bsr.color = tint;
-            bsr.sortingOrder = 3;
-            body.transform.localPosition = new Vector3(0f, -0.25f, 0f);
-            body.transform.localScale = new Vector3(0.5f, 0.9f, 1f);
-
-            // Head
-            var head = new GameObject("Head");
-            head.transform.SetParent(go.transform, false);
-            var hsr = head.AddComponent<SpriteRenderer>();
-            hsr.sprite = SpriteFactory.Circle();
-            hsr.color = tint * 0.9f;
-            hsr.sortingOrder = 4;
-            head.transform.localPosition = new Vector3(0f, 0.55f, 0f);
-            head.transform.localScale = new Vector3(0.4f, 0.4f, 1f);
+            var cfg = StickmanConfig.Default(tint);
+            cfg.raiseRightArm = true;
+            StickmanBuilder.Build(go, cfg);
 
             var col = go.AddComponent<CapsuleCollider2D>();
             col.size = new Vector2(0.6f, 1.4f);
@@ -238,6 +222,7 @@ namespace StickEvolve.Bootstrap
             hero.fireRate = 1.5f;
             hero.range = 7f;
             hero.bulletSpeed = 14f;
+            hero.bulletColor = new Color(Mathf.Clamp01(tint.r + 0.1f), Mathf.Clamp01(tint.g + 0.2f), 1f);
             return hero;
         }
 
