@@ -14,6 +14,11 @@ namespace StickEvolve.Cards
         SpawnExtraHero,
         FullHeal,
         SpawnHeroOfClass,
+        MultiShotAdd,     // +N доп.снарядов за выстрел (с разбросом)
+        BulletPierceAdd,  // +N сквозных целей у пули
+        LifestealAdd,     // +X% урона возвращается в HP стрелка
+        ThornsAdd,        // +X фиксированного урона врагу при ближнем ударе по герою
+        GoldGainMult,     // ×N коэффициент золота с убийств
     }
 
     public enum CardRarity { Common, Rare, Epic, Legendary }

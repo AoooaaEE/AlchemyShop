@@ -76,6 +76,10 @@ namespace StickEvolve.Cards
             h.isHealer = s.isHealer;
             h.berserkerScale = s.berserkerScale;
             h.ninjaCloneChance = s.ninjaCloneChance;
+            h.multiShot = d.multiShot;
+            h.bulletPierce = d.bulletPierce;
+            h.lifesteal = d.lifesteal;
+            h.thornsDamage = d.thorns;
             var hp = h.GetComponent<Health>();
             if (hp != null) hp.Configure(d.maxHp * s.hpMult, fullHeal);
         }
