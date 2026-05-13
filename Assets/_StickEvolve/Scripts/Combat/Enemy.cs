@@ -180,6 +180,14 @@ namespace StickEvolve.Combat
                     {
                         dmg.TakeDamage(damage, _target.transform.position);
                         DamageNumber.Spawn(_target.transform.position, damage, new Color(1f, 0.3f, 0.3f));
+
+                        // Шипы: герой возвращает урон ближнему атакующему.
+                        var hero = _target.GetComponent<Hero>();
+                        if (hero != null && hero.thornsDamage > 0f && Health != null && Health.IsAlive)
+                        {
+                            Health.TakeDamage(hero.thornsDamage, transform.position);
+                            DamageNumber.Spawn(transform.position, hero.thornsDamage, new Color(0.6f, 0.9f, 1f));
+                        }
                     }
                     break;
                 }
@@ -249,8 +257,10 @@ namespace StickEvolve.Combat
 
         private void HandleDeath()
         {
-            StickGameRefs.Economy?.AddGold(goldDrop);
-            GoldDrop.Spawn(transform.position, goldDrop);
+            float mult = Mathf.Max(0.1f, StickEvolve.Cards.CardProgression.GoldMultiplier);
+            int payout = Mathf.Max(1, Mathf.RoundToInt(goldDrop * mult));
+            StickGameRefs.Economy?.AddGold(payout);
+            GoldDrop.Spawn(transform.position, payout);
 
             // Splitter: на смерти крупного спавним 2 мелких рядом, без дальнейшего деления.
             if (kind == EnemyKind.Splitter && splitTier >= 2)

@@ -18,7 +18,7 @@ namespace StickEvolve.Bootstrap
     public class PrototypeBootstrapper : MonoBehaviour
     {
         [Header("Конфиг")]
-        [SerializeField] private int wavesToPlay = 50;
+        [SerializeField] private int wavesToPlay = 100;
         [SerializeField] private float heroMoveSpeed = 4.5f;
 
         private StickGame _game;
@@ -36,7 +36,11 @@ namespace StickEvolve.Bootstrap
 
         private int _rerollCount;
         private const int RerollBaseCost = 3;
-        private const int BuyAllCost = 30;
+
+        // Стоимость "Купить всё" растёт от номера волны, иначе к 10-й волне это становится бесплатным.
+        private int CurrentBuyAllCost => 25 + _spawner.CurrentWaveIndex * 8;
+        // Реролл тоже немного дороже каждой следующей волны.
+        private int CurrentRerollBaseCost => RerollBaseCost + _spawner.CurrentWaveIndex / 4;
 
         private static readonly HeroClass[] ExtraClassPool =
         {
@@ -304,27 +308,52 @@ namespace StickEvolve.Bootstrap
             var waves = new List<WaveConfig>();
             for (int i = 1; i <= wavesToPlay; i++)
             {
+                // Мини-босс (Tank ×2) на 5-х волнах, обычный Boss на 10-х, мега-босс на 25/50/75/100.
+                bool isMiniBossWave = (i % 5 == 0) && (i % 10 != 0);
+                bool isBossWave = (i % 10 == 0);
+                bool isMegaWave = (i % 25 == 0);
+
                 var w = new WaveConfig
                 {
                     waveNumber = i,
-                    spawnInterval = Mathf.Max(0.30f, 0.85f - i * 0.035f),
+                    // Базовый интервал плавно сокращается, но не быстрее 0.40c между спавнами →
+                    // волны становятся длиннее за счёт количества врагов, а не безумного темпа.
+                    spawnInterval = Mathf.Max(0.40f, 0.95f - i * 0.020f),
                     postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.22f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.14f,
+                    enemyHpMultiplier = 1f + (i - 1) * 0.28f,
+                    enemyDamageMultiplier = 1f + (i - 1) * 0.18f,
                     enemyGoldDrop = 1 + i / 2,
                     enemies = new List<WaveEnemy>()
                 };
-                // Постепенный ввод типов.
-                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 3 + i / 2 });
-                if (i >= 2)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 1 + (i - 1) / 3 });
-                if (i >= 3)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 + (i - 3) / 4 });
-                if (i >= 4)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage,     count = 1 + (i - 4) / 5 });
-                if (i >= 5)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 1 + (i - 5) / 6 });
-                if (i >= 6)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 1 + (i - 6) / 5 });
-                if (i >= 7)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 1 + (i - 7) / 6 });
-                if (i >= 8)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 1 + (i - 8) / 5 });
-                if (i >= 9)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 1 + (i - 9) / 5 });
-                if (i % 5 == 0) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
+
+                // — Основной состав, плавный ввод типов; counts заметно подняты —
+                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 5 + (i * 2) / 3 });
+                if (i >= 2)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 2 + i / 3 });
+                if (i >= 3)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 + (i - 3) / 3 });
+                if (i >= 4)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage,     count = 1 + (i - 4) / 4 });
+                if (i >= 5)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 1 + (i - 5) / 5 });
+                if (i >= 6)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 1 + (i - 6) / 4 });
+                if (i >= 7)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 1 + (i - 7) / 5 });
+                if (i >= 8)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 1 + (i - 8) / 4 });
+                if (i >= 9)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 1 + (i - 9) / 4 });
+
+                // — Боссовые слоты —
+                if (isMiniBossWave)
+                {
+                    // Усиленная Tank-волна.
+                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 2 });
+                }
+                if (isBossWave)
+                {
+                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
+                }
+                if (isMegaWave)
+                {
+                    // Мега-волна: ещё +1 Босс и заметный «припев» Bomber-ов.
+                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
+                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber, count = 3 });
+                }
+
                 waves.Add(w);
             }
             return waves;
@@ -500,26 +529,27 @@ namespace StickEvolve.Bootstrap
 
             _rerollCount = 0;
             var options = CardCatalog.RollThree();
-            _cardUI.Show(options, _game.Economy.Gold, RerollBaseCost, BuyAllCost, OnCardPicked);
+            _cardUI.Show(options, _game.Economy.Gold, CurrentRerollBaseCost, CurrentBuyAllCost, OnCardPicked);
         }
 
         private void OnShopReroll()
         {
-            int cost = RerollBaseCost + _rerollCount;
+            int cost = CurrentRerollBaseCost + _rerollCount;
             if (_game.Economy.Gold < cost) return;
             _game.Economy.TrySpend(cost);
             _rerollCount++;
             var newOptions = CardCatalog.RollThree();
             _cardUI.ReplaceCards(newOptions);
-            _cardUI.RefreshShop(_game.Economy.Gold, RerollBaseCost + _rerollCount, BuyAllCost);
+            _cardUI.RefreshShop(_game.Economy.Gold, CurrentRerollBaseCost + _rerollCount, CurrentBuyAllCost);
         }
 
         private void OnShopBuyAll()
         {
-            if (_game.Economy.Gold < BuyAllCost) return;
+            int allCost = CurrentBuyAllCost;
+            if (_game.Economy.Gold < allCost) return;
             var current = _cardUI.CurrentOptions;
             if (current == null || current.Count == 0) return;
-            _game.Economy.TrySpend(BuyAllCost);
+            _game.Economy.TrySpend(allCost);
             for (int i = 0; i < current.Count; i++)
                 CardEffect.Apply(current[i]);
             _cardUI.Hide();

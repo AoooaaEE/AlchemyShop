@@ -21,6 +21,8 @@ namespace StickEvolve.Cards
             var purple = new Color(0.8f, 0.4f, 1f);
             var gold   = new Color(1f, 0.85f, 0.2f);
             var green  = new Color(0.3f, 0.9f, 0.3f);
+            var crimson = new Color(0.95f, 0.25f, 0.35f);
+            var teal   = new Color(0.3f, 0.85f, 0.85f);
 
             var list = new List<CardSO>
             {
@@ -33,6 +35,8 @@ namespace StickEvolve.Cards
                 Make("hp_15",     "Легкая броня",     "HP +15%",                   CardEffectKind.MaxHpMultiplier,     1.15f, 0f, CardRarity.Common,   grey),
                 Make("hp_25",     "Прочная броня",     "HP +25%",                   CardEffectKind.MaxHpMultiplier,     1.25f, 0f, CardRarity.Common,   grey),
                 Make("speed_4",   "Реактив",          "Скорость пули +4",          CardEffectKind.BulletSpeedAdd,      4f,    0f, CardRarity.Common,   grey),
+                Make("gold_10",   "Жадность",         "Золото +10% за убийство",  CardEffectKind.GoldGainMult,         1.10f, 0f, CardRarity.Common,   gold),
+                Make("thorns_05", "Колючая броня",    "Шипы: +0.5 урона в ответ",  CardEffectKind.ThornsAdd,            0.5f,  0f, CardRarity.Common,   teal),
 
                 // — Rare —
                 Make("dmg_30",    "Заточенный клинок","Урон +30%",                CardEffectKind.DamageMultiplier,    1.30f, 0f, CardRarity.Rare,     blue),
@@ -42,6 +46,10 @@ namespace StickEvolve.Cards
                 Make("crit_10",   "Удачный удар",     "Шанс крита +10%",         CardEffectKind.CritChanceAdd,       0.10f, 0f, CardRarity.Rare,     blue),
                 Make("speed_7",   "Баллистика",       "Скорость пули +7",          CardEffectKind.BulletSpeedAdd,      7f,    0f, CardRarity.Rare,     blue),
                 Make("heal",      "Лечение",          "Полностью лечит героев",      CardEffectKind.FullHeal,            0f,    0f, CardRarity.Rare,     green),
+                Make("gold_25",   "Богатый рейд",     "Золото +25% за убийство",   CardEffectKind.GoldGainMult,         1.25f, 0f, CardRarity.Rare,     gold),
+                Make("lifesteal_5","Вампиризм",       "Лечение +5% от урона",      CardEffectKind.LifestealAdd,         0.05f, 0f, CardRarity.Rare,     crimson),
+                Make("thorns_15", "Иглобокий",        "Шипы: +1.5 урона в ответ",  CardEffectKind.ThornsAdd,            1.5f,  0f, CardRarity.Rare,     teal),
+                Make("pierce_1",  "Сквозной выстрел", "Пуля пробивает +1 врага",   CardEffectKind.BulletPierceAdd,      1f,    0f, CardRarity.Rare,     blue),
 
                 // — Epic —
                 Make("dmg_50",    "Истинная сила",     "Урон +50%",                CardEffectKind.DamageMultiplier,    1.50f, 0f, CardRarity.Epic,     purple),
@@ -49,12 +57,20 @@ namespace StickEvolve.Cards
                 Make("crit_20",   "Острое чувство",    "Шанс крита +20%",         CardEffectKind.CritChanceAdd,       0.20f, 0f, CardRarity.Epic,     purple),
                 Make("crit_5_x",  "Сокрушительный",   "Множитель крита +0.5",      CardEffectKind.CritMultiplierAdd,   0.5f,  0f, CardRarity.Epic,     purple),
                 Make("hp_100",    "Титаническое тело","HP +100%",                 CardEffectKind.MaxHpMultiplier,     2.00f, 0f, CardRarity.Epic,     purple),
+                Make("multishot_1","Двойной выстрел", "+1 снаряд за выстрел",      CardEffectKind.MultiShotAdd,         1f,    0f, CardRarity.Epic,     purple),
+                Make("pierce_2",  "Прорыв",           "Пуля пробивает +2 врагов",  CardEffectKind.BulletPierceAdd,      2f,    0f, CardRarity.Epic,     purple),
+                Make("lifesteal_10","Кровожадность",  "Лечение +10% от урона",     CardEffectKind.LifestealAdd,         0.10f, 0f, CardRarity.Epic,     crimson),
+                Make("gold_50",   "Алчность",         "Золото +50% за убийство",   CardEffectKind.GoldGainMult,         1.50f, 0f, CardRarity.Epic,     gold),
+                Make("thorns_3",  "Костяной панцирь", "Шипы: +3 урона в ответ",    CardEffectKind.ThornsAdd,            3f,    0f, CardRarity.Epic,     teal),
 
                 // — Legendary —
                 Make("dmg_x2",    "Ярость",            "Урон ×2",                  CardEffectKind.DamageMultiplier,    2.00f, 0f, CardRarity.Legendary, gold),
                 Make("rate_x2",   "Лихорадка",         "Скорость атаки ×2",        CardEffectKind.FireRateMultiplier,  2.00f, 0f, CardRarity.Legendary, gold),
                 Make("extra_hero","Подкрепление",     "+1 герой",                  CardEffectKind.SpawnExtraHero,      1f,    0f, CardRarity.Legendary, gold),
                 Make("extra_hero_2","Отряд",            "+2 героя",                  CardEffectKind.SpawnExtraHero,      2f,    0f, CardRarity.Legendary, gold),
+                Make("multishot_2","Шквал стрел",      "+2 снаряда за выстрел",      CardEffectKind.MultiShotAdd,         2f,    0f, CardRarity.Legendary, gold),
+                Make("lifesteal_20","Жатва крови",     "Лечение +20% от урона",     CardEffectKind.LifestealAdd,         0.20f, 0f, CardRarity.Legendary, crimson),
+                Make("gold_x2",   "Золотая жила",     "Золото ×2 за убийство",     CardEffectKind.GoldGainMult,         2.00f, 0f, CardRarity.Legendary, gold),
 
                 // — Наёмники конкретных классов (Epic/Legendary, низкий шанс) —
                 MakeHireCard("hire_archer",   "Найм: Лучник",    "+1 Лучник в отряд",     HeroClass.Archer,    CardRarity.Epic,      new Color(0.55f, 0.95f, 0.4f)),

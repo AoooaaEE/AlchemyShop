@@ -32,6 +32,12 @@ namespace StickEvolve.Combat
         public bool isClone;
         public float cloneLifetime = 5f;
 
+        [Header("Глобальные модификаторы")]
+        public int multiShot;       // +N дополнительных снарядов за выстрел
+        public int bulletPierce;    // у пуль есть пробитие
+        public float lifesteal;     // 0..1, доля урона возвращается в HP
+        public float thornsDamage;  // ответный урон врагу в ближнем бою
+
         [Header("Визуал")]
         public Color bulletColor = new Color(0.4f, 0.8f, 1f);
 
@@ -117,12 +123,30 @@ namespace StickEvolve.Combat
             _nextFireTime = Time.time + 1f / fireRate;
 
             float finalDmg = damage * BerserkerMultiplier();
-            var b = Bullet.Spawn(transform.position + (Vector3)(dir * 0.4f), dir, finalDmg, bulletSpeed,
-                CombatTeam.Enemies, bulletColor);
-            b.critChance = critChance;
-            b.critMultiplier = critMultiplier;
-            b.explosionRadius = bulletExplosionRadius;
-            b.ownerHero = this;
+            int totalShots = 1 + Mathf.Max(0, multiShot);
+            // Базовая стрельба: один снаряд по direction; экстра-снаряды раздаются с +-spread по углу.
+            for (int i = 0; i < totalShots; i++)
+            {
+                Vector2 shotDir = dir;
+                if (totalShots > 1)
+                {
+                    // Распределяем углы равномерно от -spreadHalf до +spreadHalf вокруг базового направления
+                    float spreadHalf = 8f * Mathf.Min(totalShots - 1, 3); // макс ±24°
+                    float t = (totalShots == 1) ? 0f : (i / (float)(totalShots - 1)) * 2f - 1f; // -1..+1
+                    float angle = t * spreadHalf;
+                    float rad = angle * Mathf.Deg2Rad;
+                    float cs = Mathf.Cos(rad), sn = Mathf.Sin(rad);
+                    shotDir = new Vector2(dir.x * cs - dir.y * sn, dir.x * sn + dir.y * cs);
+                }
+                var b = Bullet.Spawn(transform.position + (Vector3)(shotDir * 0.4f), shotDir, finalDmg, bulletSpeed,
+                    CombatTeam.Enemies, bulletColor);
+                b.critChance = critChance;
+                b.critMultiplier = critMultiplier;
+                b.explosionRadius = bulletExplosionRadius;
+                b.piercesLeft = bulletPierce;
+                b.lifestealRatio = lifesteal;
+                b.ownerHero = this;
+            }
             _animator?.TriggerShoot();
         }
 

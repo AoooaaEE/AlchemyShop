@@ -18,6 +18,11 @@ namespace StickEvolve.Cards
         public float critChance = 0f;
         public float critMultiplier = 2f;
         public int extraHeroes;
+        public int multiShot;        // дополнительные снаряды
+        public int bulletPierce;     // сквозные пробития
+        public float lifesteal;      // 0..1
+        public float thorns;         // фиксированный урон шипов
+        public float goldMult = 1f;  // глобальный множитель золота
         public readonly List<HeroClass> classHires = new();
     }
 
@@ -31,6 +36,9 @@ namespace StickEvolve.Cards
         private static readonly Dictionary<string, int> _levels = new();
         public static int CommonsStreak;
         public const int PityThreshold = 10;
+
+        /// <summary>Кэшируется в Compute(): глобальный множитель золота с убийств.</summary>
+        public static float GoldMultiplier { get; private set; } = 1f;
 
         public static int GetLevel(string id)
         {
@@ -63,6 +71,7 @@ namespace StickEvolve.Cards
                 int times = kv.Value;
                 for (int i = 0; i < times; i++) ApplyOne(d, card);
             }
+            GoldMultiplier = d.goldMult;
             return d;
         }
 
@@ -78,6 +87,11 @@ namespace StickEvolve.Cards
                 case CardEffectKind.CritMultiplierAdd:   d.critMultiplier += card.value; break;
                 case CardEffectKind.BulletSpeedAdd:      d.bulletSpeed += card.value; break;
                 case CardEffectKind.SpawnExtraHero:      d.extraHeroes += Mathf.Max(1, Mathf.RoundToInt(card.value)); break;
+                case CardEffectKind.MultiShotAdd:        d.multiShot += Mathf.Max(1, Mathf.RoundToInt(card.value)); break;
+                case CardEffectKind.BulletPierceAdd:     d.bulletPierce += Mathf.Max(1, Mathf.RoundToInt(card.value)); break;
+                case CardEffectKind.LifestealAdd:        d.lifesteal = Mathf.Clamp01(d.lifesteal + card.value); break;
+                case CardEffectKind.ThornsAdd:           d.thorns += card.value; break;
+                case CardEffectKind.GoldGainMult:        d.goldMult *= card.value; break;
                 case CardEffectKind.SpawnHeroOfClass:
                 {
                     int n = Mathf.Max(1, Mathf.RoundToInt(card.value));

@@ -19,9 +19,12 @@ namespace StickEvolve.Combat
         public float explosionRadius = 0f;
         public float explosionSplashRatio = 0.6f;
         public bool isHealing;          // true — лечит союзника (Healer)
-        public Hero ownerHero;          // для крит-триггеров (напр. Ninja-клон)
+        public Hero ownerHero;          // для крит-триггеров (напр. Ninja-клон) и lifesteal
+        public int piercesLeft;         // 0 = снаряд исчезает после первого попадания
+        public float lifestealRatio;    // 0..1, доля урона возвращается в HP стрелка
 
         private float _age;
+        private readonly System.Collections.Generic.HashSet<int> _hitColliderIds = new();
 
         public static Bullet Spawn(Vector3 pos, Vector2 dir, float dmg, float spd, CombatTeam team, Color color)
         {
@@ -77,6 +80,11 @@ namespace StickEvolve.Combat
             var dmg = other.GetComponent<IDamageable>() ?? other.GetComponentInParent<IDamageable>();
             if (dmg == null || !dmg.IsAlive) return;
 
+            // Защита от повторного попадания в того же врага при пробивании
+            int colliderId = other.GetInstanceID();
+            if (_hitColliderIds.Contains(colliderId)) return;
+            _hitColliderIds.Add(colliderId);
+
             float final = damage;
             bool crit = false;
             if (critChance > 0f && Random.value < critChance)
@@ -89,8 +97,22 @@ namespace StickEvolve.Combat
 
             if (crit && ownerHero != null) ownerHero.OnCrit(transform.position);
 
+            if (lifestealRatio > 0f && ownerHero != null)
+            {
+                var ownerHp = ownerHero.GetComponent<Health>();
+                if (ownerHp != null && ownerHp.IsAlive)
+                    ownerHp.Heal(final * lifestealRatio);
+            }
+
             if (explosionRadius > 0f)
                 ApplySplash(other, final * explosionSplashRatio);
+
+            // Пробитие: если снаряд должен прошить ещё одного врага — не уничтожаем.
+            if (piercesLeft > 0)
+            {
+                piercesLeft--;
+                return;
+            }
 
             Destroy(gameObject);
         }
