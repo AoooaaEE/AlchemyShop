@@ -15,9 +15,9 @@ namespace StickEvolve.Cards
     {
         private Canvas _canvas;
         private GameObject _panel;
-        private Transform _cardsRow;
         private event Action<CardSO> _onPick;
         private readonly List<CardSO> _currentOptions = new();
+        private readonly List<GameObject> _cardObjects = new();
 
         private Button _rerollBtn;
         private TextMeshProUGUI _rerollLabel;
@@ -33,7 +33,7 @@ namespace StickEvolve.Cards
 
         public static CardChoiceUI Create(Canvas hudCanvas)
         {
-            var go = new GameObject("CardChoiceUI");
+            var go = new GameObject("CardChoiceUI", typeof(RectTransform));
             go.transform.SetParent(hudCanvas.transform, false);
             var ui = go.AddComponent<CardChoiceUI>();
             ui._canvas = hudCanvas;
@@ -43,9 +43,9 @@ namespace StickEvolve.Cards
 
         private void BuildHidden()
         {
-            _panel = new GameObject("Panel");
+            _panel = new GameObject("Panel", typeof(RectTransform));
             _panel.transform.SetParent(transform, false);
-            var rt = _panel.AddComponent<RectTransform>();
+            var rt = (RectTransform)_panel.transform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
@@ -63,20 +63,10 @@ namespace StickEvolve.Cards
             _currentOptions.Clear();
             _currentOptions.AddRange(options);
 
-            for (int i = _panel.transform.childCount - 1; i >= 0; i--)
-                Destroy(_panel.transform.GetChild(i).gameObject);
+            ClearPanelChildren();
 
             var title = MakeText(_panel.transform, "Title", "ВЫБЕРИ КАРТУ", 56, new Vector2(0f, 320f), new Vector2(900f, 80f), TextAlignmentOptions.Center);
             title.color = Color.white;
-
-            _cardsRow = new GameObject("CardsRow").transform;
-            _cardsRow.SetParent(_panel.transform, false);
-            var crRT = _cardsRow.gameObject.AddComponent<RectTransform>();
-            crRT.anchorMin = new Vector2(0.5f, 0.5f);
-            crRT.anchorMax = new Vector2(0.5f, 0.5f);
-            crRT.pivot = new Vector2(0.5f, 0.5f);
-            crRT.anchoredPosition = new Vector2(0f, 40f);
-            crRT.sizeDelta = new Vector2(1020f, 420f);
 
             RebuildCards();
             BuildShopRow();
@@ -118,23 +108,38 @@ namespace StickEvolve.Cards
             if (_panel != null) _panel.SetActive(false);
         }
 
+        private void ClearPanelChildren()
+        {
+            _cardObjects.Clear();
+            _rerollBtn = null;
+            _rerollLabel = null;
+            _buyAllBtn = null;
+            _buyAllLabel = null;
+            _goldLabel = null;
+            for (int i = _panel.transform.childCount - 1; i >= 0; i--)
+                Destroy(_panel.transform.GetChild(i).gameObject);
+        }
+
         private void RebuildCards()
         {
-            if (_cardsRow == null) return;
-            for (int i = _cardsRow.childCount - 1; i >= 0; i--)
-                Destroy(_cardsRow.GetChild(i).gameObject);
+            for (int i = _cardObjects.Count - 1; i >= 0; i--)
+                if (_cardObjects[i] != null) Destroy(_cardObjects[i]);
+            _cardObjects.Clear();
 
             float startX = -340f;
             float dx = 340f;
             for (int i = 0; i < _currentOptions.Count; i++)
-                BuildCard(_currentOptions[i], new Vector2(startX + dx * i, 0f));
+            {
+                var go = BuildCard(_currentOptions[i], new Vector2(startX + dx * i, 40f));
+                _cardObjects.Add(go);
+            }
         }
 
         private void BuildShopRow()
         {
-            var row = new GameObject("ShopRow");
+            var row = new GameObject("ShopRow", typeof(RectTransform));
             row.transform.SetParent(_panel.transform, false);
-            var rrt = row.AddComponent<RectTransform>();
+            var rrt = (RectTransform)row.transform;
             rrt.anchorMin = new Vector2(0.5f, 0.5f);
             rrt.anchorMax = new Vector2(0.5f, 0.5f);
             rrt.pivot = new Vector2(0.5f, 0.5f);
@@ -150,15 +155,15 @@ namespace StickEvolve.Cards
             _buyAllBtn = MakeShopButton(row.transform, "BuyAll", new Vector2(200f, -20f), out _buyAllLabel, new Color(0.85f, 0.55f, 0.25f));
             _buyAllBtn.onClick.AddListener(() => OnBuyAllClicked?.Invoke());
 
-            var hint = MakeText(row.transform, "Hint", "Стрелки / W S — двигать героев между волнами", 20, new Vector2(0f, -90f), new Vector2(900f, 30f), TextAlignmentOptions.Center);
+            var hint = MakeText(row.transform, "Hint", "Стрелки / W S — двигать героев", 20, new Vector2(0f, -90f), new Vector2(900f, 30f), TextAlignmentOptions.Center);
             hint.color = new Color(0.7f, 0.7f, 0.75f);
         }
 
         private Button MakeShopButton(Transform parent, string name, Vector2 pos, out TextMeshProUGUI label, Color baseColor)
         {
-            var go = new GameObject($"Btn_{name}");
+            var go = new GameObject($"Btn_{name}", typeof(RectTransform));
             go.transform.SetParent(parent, false);
-            var rt = go.AddComponent<RectTransform>();
+            var rt = (RectTransform)go.transform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -175,11 +180,11 @@ namespace StickEvolve.Cards
             return btn;
         }
 
-        private void BuildCard(CardSO card, Vector2 anchoredPos)
+        private GameObject BuildCard(CardSO card, Vector2 anchoredPos)
         {
-            var go = new GameObject($"Card_{card.id}");
-            go.transform.SetParent(_cardsRow, false);
-            var rt = go.AddComponent<RectTransform>();
+            var go = new GameObject($"Card_{card.id}", typeof(RectTransform));
+            go.transform.SetParent(_panel.transform, false);
+            var rt = (RectTransform)go.transform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -189,15 +194,16 @@ namespace StickEvolve.Cards
             var img = go.AddComponent<Image>();
             img.color = card.frameColor;
 
-            var inner = new GameObject("Inner");
+            var inner = new GameObject("Inner", typeof(RectTransform));
             inner.transform.SetParent(go.transform, false);
-            var irt = inner.AddComponent<RectTransform>();
+            var irt = (RectTransform)inner.transform;
             irt.anchorMin = new Vector2(0f, 0f);
             irt.anchorMax = new Vector2(1f, 1f);
             irt.offsetMin = new Vector2(8f, 8f);
             irt.offsetMax = new Vector2(-8f, -8f);
             var iimg = inner.AddComponent<Image>();
             iimg.color = new Color(0.12f, 0.12f, 0.15f, 1f);
+            iimg.raycastTarget = false;
 
             var btn = go.AddComponent<Button>();
             btn.targetGraphic = img;
@@ -216,9 +222,9 @@ namespace StickEvolve.Cards
             int curLevel = CardProgression.GetLevel(card.id);
             if (curLevel > 0)
             {
-                var badge = new GameObject("LvBadge");
+                var badge = new GameObject("LvBadge", typeof(RectTransform));
                 badge.transform.SetParent(go.transform, false);
-                var brt = badge.AddComponent<RectTransform>();
+                var brt = (RectTransform)badge.transform;
                 brt.anchorMin = new Vector2(1f, 1f);
                 brt.anchorMax = new Vector2(1f, 1f);
                 brt.pivot = new Vector2(1f, 1f);
@@ -236,13 +242,14 @@ namespace StickEvolve.Cards
                 lvRT.offsetMax = Vector2.zero;
                 lvText.color = new Color(1f, 0.9f, 0.4f);
             }
+            return go;
         }
 
         private TextMeshProUGUI MakeText(Transform parent, string label, string text, float fontSize, Vector2 pos, Vector2 size, TextAlignmentOptions align)
         {
-            var go = new GameObject($"Text_{label}");
+            var go = new GameObject($"Text_{label}", typeof(RectTransform));
             go.transform.SetParent(parent, false);
-            var rt = go.AddComponent<RectTransform>();
+            var rt = (RectTransform)go.transform;
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
