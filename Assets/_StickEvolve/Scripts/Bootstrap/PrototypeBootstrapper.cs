@@ -96,13 +96,17 @@ namespace StickEvolve.Bootstrap
 
         private void BuildBackground()
         {
-            // — Небо: градиент из 4 слоёв (сверху — тёмно-синий, к горизонту — мягкий персик) —
+            // Камера тоже подкрасим, чтобы за границами sprite-неба тон совпадал.
+            if (_cam != null) _cam.backgroundColor = new Color(0.55f, 0.80f, 0.98f);
+
+            // — Небо: широкий градиент из 5 слоёв (день, ярко-голубой → тёплый горизонт) —
             var skyColors = new[]
             {
-                new Color(0.10f, 0.13f, 0.25f),
-                new Color(0.18f, 0.22f, 0.40f),
-                new Color(0.40f, 0.35f, 0.55f),
-                new Color(0.85f, 0.55f, 0.45f),
+                new Color(0.30f, 0.55f, 0.90f),   // верх — насыщенный синий
+                new Color(0.45f, 0.70f, 0.95f),
+                new Color(0.62f, 0.82f, 0.98f),
+                new Color(0.80f, 0.92f, 1.00f),
+                new Color(0.95f, 0.96f, 0.90f),   // горизонт — лёгкая дымка
             };
             float skyTop = 5.5f;
             float skyBottom = -1.0f;
@@ -113,56 +117,86 @@ namespace StickEvolve.Bootstrap
                 var sr = band.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.White();
                 sr.color = skyColors[i];
-                sr.sortingOrder = -50 + i;
+                sr.sortingOrder = -60 + i;
                 band.transform.position = new Vector3(0f, skyTop - bandH * (i + 0.5f), 0f);
                 band.transform.localScale = new Vector3(40f, bandH + 0.05f, 1f);
             }
 
-            // — Облака (мягкие кружки), дрейфуют влево —
-            for (int i = 0; i < 4; i++)
+            // — Солнце в правой верхней четверти (с ореолом). Слегка покачивается за счёт ParallaxDrift скоростью 0. —
+            var sun = new GameObject("Sun");
+            var sunSR = sun.AddComponent<SpriteRenderer>();
+            sunSR.sprite = SpriteFactory.Sun();
+            sunSR.sortingOrder = -45;
+            sun.transform.position = new Vector3(4.5f, 3.6f, 0f);
+            sun.transform.localScale = Vector3.one * 2.4f;
+
+            // Внешний мягкий ореол вокруг солнца
+            var sunHalo = new GameObject("SunHalo");
+            var haloSR = sunHalo.AddComponent<SpriteRenderer>();
+            haloSR.sprite = SpriteFactory.SoftCircle();
+            haloSR.color = new Color(1f, 0.95f, 0.75f, 0.35f);
+            haloSR.sortingOrder = -46;
+            sunHalo.transform.position = new Vector3(4.5f, 3.6f, 0f);
+            sunHalo.transform.localScale = Vector3.one * 5.5f;
+
+            // — Облака (мягкие кружки), дрейфуют влево; разная высота и скорость —
+            for (int i = 0; i < 6; i++)
             {
                 var c = new GameObject($"Cloud_{i}");
                 var sr = c.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.SoftCircle();
-                sr.color = new Color(1f, 1f, 1f, 0.5f);
-                sr.sortingOrder = -30;
-                c.transform.position = new Vector3(Random.Range(-8f, 8f), Random.Range(2.5f, 4.5f), 0f);
-                c.transform.localScale = new Vector3(Random.Range(2.5f, 4f), Random.Range(0.9f, 1.4f), 1f);
+                sr.color = new Color(1f, 1f, 1f, Random.Range(0.55f, 0.85f));
+                sr.sortingOrder = -30 - (i % 2); // часть впереди, часть позади
+                c.transform.position = new Vector3(Random.Range(-9f, 9f), Random.Range(1.8f, 4.5f), 0f);
+                c.transform.localScale = new Vector3(Random.Range(2.5f, 4.2f), Random.Range(1.0f, 1.6f), 1f);
                 var drift = c.AddComponent<ParallaxDrift>();
-                drift.speed = Random.Range(0.05f, 0.18f);
+                drift.speed = Random.Range(0.05f, 0.20f);
                 drift.resetX = 12f;
                 drift.wrapX = -12f;
             }
 
-            // — Дальние горы (слабо тёмные, ниже горизонта) —
-            for (int i = 0; i < 6; i++)
+            // — Дальние горы (голубоватые, нижний контур горизонта) —
+            for (int i = 0; i < 7; i++)
             {
                 var m = new GameObject($"MountainFar_{i}");
                 var sr = m.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.30f, 0.30f, 0.45f);
-                sr.sortingOrder = -22;
-                m.transform.position = new Vector3(-9f + i * 3.5f + Random.Range(-0.5f, 0.5f), -1.6f, 0f);
-                m.transform.localScale = new Vector3(Random.Range(3.5f, 5.5f), Random.Range(2f, 2.8f), 1f);
+                sr.color = new Color(0.55f, 0.62f, 0.78f);
+                sr.sortingOrder = -25;
+                m.transform.position = new Vector3(-10f + i * 3.0f + Random.Range(-0.4f, 0.4f), -1.6f, 0f);
+                m.transform.localScale = new Vector3(Random.Range(3.0f, 4.5f), Random.Range(1.8f, 2.4f), 1f);
             }
 
-            // — Ближние горы (темнее, больше) —
+            // — Ближние горы (более тёмный голубой) —
             for (int i = 0; i < 5; i++)
             {
                 var m = new GameObject($"MountainNear_{i}");
                 var sr = m.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.18f, 0.18f, 0.30f);
-                sr.sortingOrder = -20;
-                m.transform.position = new Vector3(-9f + i * 4.2f + Random.Range(-0.5f, 0.5f), -2.2f, 0f);
-                m.transform.localScale = new Vector3(Random.Range(4f, 6f), Random.Range(2.5f, 3.5f), 1f);
+                sr.color = new Color(0.38f, 0.46f, 0.62f);
+                sr.sortingOrder = -23;
+                m.transform.position = new Vector3(-10f + i * 4.0f + Random.Range(-0.4f, 0.4f), -1.85f, 0f);
+                m.transform.localScale = new Vector3(Random.Range(4f, 6f), Random.Range(2.3f, 3.2f), 1f);
+            }
+
+            // — Лес: ёлки за линией горизонта (дальний слой, средне-зелёные) —
+            for (int i = 0; i < 14; i++)
+            {
+                var t = new GameObject($"TreeFar_{i}");
+                var sr = t.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.PineTree();
+                sr.color = new Color(0.22f, 0.42f, 0.28f);
+                sr.sortingOrder = -18;
+                t.transform.position = new Vector3(-10f + i * 1.45f + Random.Range(-0.3f, 0.3f), -1.55f, 0f);
+                float h = Random.Range(0.7f, 1.1f);
+                t.transform.localScale = new Vector3(h * 0.7f, h, 1f);
             }
 
             // — Земля: основная полоса + верхний травяной слой —
             var ground = new GameObject("Ground");
             var groundSR = ground.AddComponent<SpriteRenderer>();
             groundSR.sprite = SpriteFactory.White();
-            groundSR.color = new Color(0.18f, 0.13f, 0.10f);
+            groundSR.color = new Color(0.42f, 0.30f, 0.18f);
             groundSR.sortingOrder = -10;
             ground.transform.position = new Vector3(0f, -3.5f, 0f);
             ground.transform.localScale = new Vector3(40f, 4.5f, 1f);
@@ -170,21 +204,40 @@ namespace StickEvolve.Bootstrap
             var grass = new GameObject("Grass");
             var grassSR = grass.AddComponent<SpriteRenderer>();
             grassSR.sprite = SpriteFactory.White();
-            grassSR.color = new Color(0.30f, 0.45f, 0.20f);
+            grassSR.color = new Color(0.42f, 0.66f, 0.28f);
             grassSR.sortingOrder = -9;
             grass.transform.position = new Vector3(0f, -1.45f, 0f);
-            grass.transform.localScale = new Vector3(40f, 0.18f, 1f);
+            grass.transform.localScale = new Vector3(40f, 0.22f, 1f);
 
-            // — Кустики травы по линии горизонта —
-            for (int i = 0; i < 18; i++)
+            // — Кустики травы перед игроком —
+            for (int i = 0; i < 22; i++)
             {
                 var t = new GameObject($"GrassTuft_{i}");
                 var sr = t.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.35f, 0.55f, 0.22f);
+                sr.color = new Color(0.32f, 0.55f, 0.22f);
                 sr.sortingOrder = -8;
-                t.transform.position = new Vector3(-10f + i * 1.2f + Random.Range(-0.3f, 0.3f), -1.42f, 0f);
-                t.transform.localScale = new Vector3(Random.Range(0.18f, 0.28f), Random.Range(0.18f, 0.32f), 1f);
+                t.transform.position = new Vector3(-10f + i * 1.0f + Random.Range(-0.3f, 0.3f), -1.40f, 0f);
+                t.transform.localScale = new Vector3(Random.Range(0.18f, 0.30f), Random.Range(0.18f, 0.35f), 1f);
+            }
+
+            // — Цветочки (точки) на травянном слое —
+            var flowerColors = new[]
+            {
+                new Color(0.95f, 0.85f, 0.30f),  // жёлтый
+                new Color(0.95f, 0.45f, 0.55f),  // розовый
+                new Color(0.85f, 0.45f, 0.90f),  // фиолетовый
+                new Color(0.95f, 0.95f, 0.95f),  // белый
+            };
+            for (int i = 0; i < 24; i++)
+            {
+                var f = new GameObject($"Flower_{i}");
+                var sr = f.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Circle();
+                sr.color = flowerColors[Random.Range(0, flowerColors.Length)];
+                sr.sortingOrder = -7;
+                f.transform.position = new Vector3(-10f + i * 0.9f + Random.Range(-0.3f, 0.3f), -1.43f + Random.Range(-0.04f, 0.04f), 0f);
+                f.transform.localScale = Vector3.one * Random.Range(0.06f, 0.11f);
             }
         }
 
@@ -327,6 +380,21 @@ namespace StickEvolve.Bootstrap
             cfg.hatColor = new Color(s.tint.r * 0.4f, s.tint.g * 0.4f, s.tint.b * 0.6f);
             cfg.wideShoulders = s.wideShoulders;
             cfg.raiseRightArm = true;
+            if (s.hasCape)
+            {
+                cfg.hasCape = true;
+                cfg.capeColor = s.capeColor;
+            }
+            // Снайпер/Маг — лёгкие защитные перчатки
+            if (cls == HeroClass.Sniper || cls == HeroClass.Mage)
+            {
+                cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
+            }
+            // Танк/Берсерк — щитоподобная фигура, без видимых перчаток-кистей
+            if (cls == HeroClass.Tank || cls == HeroClass.Berserker)
+            {
+                cfg.handSize = 0.13f; // крупнее кулаки
+            }
             StickmanBuilder.Build(go, cfg);
 
             // Тень под героем —

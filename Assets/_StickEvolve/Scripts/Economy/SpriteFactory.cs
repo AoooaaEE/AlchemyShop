@@ -120,5 +120,112 @@ namespace StickEvolve.Economy
             _verticalGradient.name = "SE_VertGradient";
             return _verticalGradient;
         }
+
+        private static Sprite _sun;
+        private static Sprite _star;
+        private static Sprite _pineTree;
+
+        /// <summary>Солнце с короной: ярко-белая середина → жёлтое ядро → мягкий ореол. Используется как фоновый диск.</summary>
+        public static Sprite Sun(int size = 128)
+        {
+            if (_sun != null) return _sun;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color[size * size];
+            float r = size * 0.5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - r + 0.5f) / r;
+                float dy = (y - r + 0.5f) / r;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                Color c;
+                if (d > 1f) c = new Color(0f, 0f, 0f, 0f);
+                else if (d < 0.55f) c = new Color(1f, 1f, 0.85f, 1f);          // ядро
+                else if (d < 0.75f) c = new Color(1f, 0.92f, 0.55f, 1f);       // жёлтый
+                else                c = new Color(1f, 0.85f, 0.45f, Mathf.Clamp01(1f - (d - 0.75f) / 0.25f) * 0.6f); // ореол
+                px[y * size + x] = c;
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            _sun = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            _sun.name = "SE_Sun";
+            return _sun;
+        }
+
+        /// <summary>Маленькая 4-конечная звёздочка (тонкий крест с заострением).</summary>
+        public static Sprite Star(int size = 32)
+        {
+            if (_star != null) return _star;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color[size * size];
+            float r = size * 0.5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = Mathf.Abs(x - r + 0.5f) / r;
+                float dy = Mathf.Abs(y - r + 0.5f) / r;
+                // «Крест»: внутри одной из узких полос
+                float coreH = Mathf.Clamp01(1f - dx * 3f) * Mathf.Clamp01(1f - dy * 1.2f);
+                float coreV = Mathf.Clamp01(1f - dy * 3f) * Mathf.Clamp01(1f - dx * 1.2f);
+                float a = Mathf.Max(coreH, coreV);
+                a = a * a;
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            _star = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            _star.name = "SE_Star";
+            return _star;
+        }
+
+        /// <summary>Силуэт ели: треугольник тёмной зелени с маленьким стволиком. Pivot — низ-центр.</summary>
+        public static Sprite PineTree(int size = 64)
+        {
+            if (_pineTree != null) return _pineTree;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color[size * size];
+            int cx = size / 2;
+            // Делаем ствол (нижние 15%)
+            int trunkTop = Mathf.RoundToInt(size * 0.15f);
+            int trunkHalf = Mathf.Max(1, size / 16);
+            // Делаем ёлку из 3 ярусов треугольников
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                Color c = new Color(0f, 0f, 0f, 0f);
+                if (y < trunkTop && Mathf.Abs(x - cx) <= trunkHalf)
+                {
+                    c = new Color(0.4f, 0.27f, 0.15f, 1f); // ствол
+                }
+                else
+                {
+                    // 3 яруса, каждый — треугольник снизу-вверх, перекрывающийся
+                    for (int tier = 0; tier < 3; tier++)
+                    {
+                        float tierBottom = trunkTop + tier * (size - trunkTop) / 4f;
+                        float tierTop = trunkTop + (tier + 2) * (size - trunkTop) / 4f;
+                        if (y >= tierBottom && y <= tierTop)
+                        {
+                            float t = (y - tierBottom) / (tierTop - tierBottom);
+                            int halfW = Mathf.RoundToInt((1f - t) * (size * (0.45f - tier * 0.06f)));
+                            if (Mathf.Abs(x - cx) <= halfW)
+                            {
+                                c = new Color(1f, 1f, 1f, 1f);
+                                break;
+                            }
+                        }
+                    }
+                }
+                px[y * size + x] = c;
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            _pineTree = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0f), size);
+            _pineTree.name = "SE_PineTree";
+            return _pineTree;
+        }
     }
 }
