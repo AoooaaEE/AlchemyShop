@@ -87,6 +87,7 @@ namespace StickEvolve.Core
             Economy.Reset(0);
             EnemyRegistry.Instance.Clear();
             HeroRegistry.Instance.Clear();
+            PersistSave();
             OnGameRestart?.Invoke();
         }
 

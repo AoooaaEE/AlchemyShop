@@ -125,10 +125,10 @@ namespace StickEvolve.Wave
                     e.goldDrop = cfg.enemyGoldDrop * 2;
                     break;
                 case EnemyKind.Boss:
-                    hp.Configure(70f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 0.6f;
+                    hp.Configure(90f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.65f;
                     e.damage = 3.5f * cfg.enemyDamageMultiplier;
-                    e.attackRate = 0.45f;
+                    e.attackRate = 0.5f;
                     e.attackRange = 1.0f;
                     e.goldDrop = cfg.enemyGoldDrop * 25;
                     break;

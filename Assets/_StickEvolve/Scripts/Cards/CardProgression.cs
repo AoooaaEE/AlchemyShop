@@ -9,11 +9,11 @@ namespace StickEvolve.Cards
     /// </summary>
     public class HeroDefaults
     {
-        public float damage = 1.5f;
-        public float fireRate = 2.5f;
+        public float damage = 1.2f;
+        public float fireRate = 2.2f;
         public float range = 7f;
         public float bulletSpeed = 14f;
-        public float maxHp = 30f;
+        public float maxHp = 25f;
         public float critChance = 0f;
         public float critMultiplier = 2f;
         public int extraHeroes;

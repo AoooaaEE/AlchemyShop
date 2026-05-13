@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using StickEvolve.Cards;
 using StickEvolve.Combat;
@@ -165,10 +166,10 @@ namespace StickEvolve.Bootstrap
                 var w = new WaveConfig
                 {
                     waveNumber = i,
-                    spawnInterval = Mathf.Max(0.35f, 0.9f - i * 0.03f),
+                    spawnInterval = Mathf.Max(0.30f, 0.85f - i * 0.035f),
                     postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.15f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.10f,
+                    enemyHpMultiplier = 1f + (i - 1) * 0.22f,
+                    enemyDamageMultiplier = 1f + (i - 1) * 0.14f,
                     enemyGoldDrop = 1 + i / 2,
                     enemies = new List<WaveEnemy>()
                 };
@@ -240,8 +241,18 @@ namespace StickEvolve.Bootstrap
                 if (hero != null && hero.gameObject != null)
                     hero.gameObject.SetActive(false);
                 if (HeroRegistry.Instance.Alive.Count == 0)
-                    _game.TriggerGameOver();
+                    StartCoroutine(CheckGameOverAfterDelay());
             };
+        }
+
+        // После смерти всех героев ждём пару кадров: если волна в этот момент завершилась (босс убит
+        // в той же кадр), OnWaveCompleted ревайвнет героев, и геймовер не нужен.
+        private IEnumerator CheckGameOverAfterDelay()
+        {
+            yield return null;
+            yield return null;
+            if (HeroRegistry.Instance.Alive.Count == 0 && EnemyRegistry.Instance.Alive.Count > 0)
+                _game.TriggerGameOver();
         }
 
         private void BeginGame()
@@ -256,8 +267,24 @@ namespace StickEvolve.Bootstrap
             // Если все волны пройдены — событие OnAllWavesCompleted сработает из RunWave, не вызываем здесь
             if (_spawner.CurrentWaveIndex >= _spawner.waves.Count) return;
 
+            // Между волнами: поднимаем всех павших героев и лечим всех живых.
+            ReviveAndHealHeroes();
+
             var options = CardCatalog.RollThree();
             _cardUI.Show(options, OnCardPicked);
+        }
+
+        private void ReviveAndHealHeroes()
+        {
+            var d = CardProgression.Compute();
+            for (int i = 0; i < _heroes.Count; i++)
+            {
+                var h = _heroes[i];
+                if (h == null) continue;
+                if (!h.gameObject.activeSelf) h.gameObject.SetActive(true);
+                var hp = h.GetComponent<Health>();
+                if (hp != null) hp.Configure(d.maxHp, fullHeal: true);
+            }
         }
 
         private void OnCardPicked(CardSO card)
