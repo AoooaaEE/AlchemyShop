@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using StickEvolve.Combat;
 using StickEvolve.Data;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ namespace StickEvolve.Cards
         public float critChance = 0f;
         public float critMultiplier = 2f;
         public int extraHeroes;
+        public readonly List<HeroClass> classHires = new();
     }
 
     /// <summary>
@@ -76,6 +78,14 @@ namespace StickEvolve.Cards
                 case CardEffectKind.CritMultiplierAdd:   d.critMultiplier += card.value; break;
                 case CardEffectKind.BulletSpeedAdd:      d.bulletSpeed += card.value; break;
                 case CardEffectKind.SpawnExtraHero:      d.extraHeroes += Mathf.Max(1, Mathf.RoundToInt(card.value)); break;
+                case CardEffectKind.SpawnHeroOfClass:
+                {
+                    int n = Mathf.Max(1, Mathf.RoundToInt(card.value));
+                    int classInt = Mathf.RoundToInt(card.secondaryValue);
+                    var cls = (HeroClass)Mathf.Clamp(classInt, 0, System.Enum.GetValues(typeof(HeroClass)).Length - 1);
+                    for (int i = 0; i < n; i++) d.classHires.Add(cls);
+                    break;
+                }
             }
         }
 

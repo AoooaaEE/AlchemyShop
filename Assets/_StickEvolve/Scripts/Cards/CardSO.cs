@@ -12,7 +12,8 @@ namespace StickEvolve.Cards
         CritMultiplierAdd,
         BulletSpeedAdd,
         SpawnExtraHero,
-        FullHeal
+        FullHeal,
+        SpawnHeroOfClass,
     }
 
     public enum CardRarity { Common, Rare, Epic, Legendary }
