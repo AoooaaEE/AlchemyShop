@@ -60,7 +60,7 @@ namespace StickEvolve.UI
             goldRT.anchoredPosition = new Vector2(40f, 0f);
             goldRT.sizeDelta = new Vector2(400f, 60f);
             _goldText.color = new Color(1f, 0.85f, 0.2f);
-            AddHudIcon("GoldCoin", new Vector2(18f, 0f), new Vector2(34f, 34f), SpriteFactory.Circle(), new Color(1f, 0.75f, 0.15f));
+            AddHudIcon("GoldCoin", new Vector2(20f, 0f), new Vector2(34f, 34f), SpriteFactory.Circle(), new Color(1f, 0.75f, 0.15f), new Vector2(0f, 0.5f));
 
             _waveText = MakeText("Wave", "WAVE 1", 40, TextAlignmentOptions.Center);
             var waveRT = _waveText.rectTransform;
@@ -70,8 +70,8 @@ namespace StickEvolve.UI
             waveRT.anchoredPosition = new Vector2(0f, 0f);
             waveRT.sizeDelta = new Vector2(400f, 60f);
             _waveText.color = Color.white;
-            AddHudIcon("WaveSparkL", new Vector2(-170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f));
-            AddHudIcon("WaveSparkR", new Vector2(170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f));
+            AddHudIcon("WaveSparkL", new Vector2(-170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f), new Vector2(0.5f, 0.5f));
+            AddHudIcon("WaveSparkR", new Vector2(170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f), new Vector2(0.5f, 0.5f));
 
             // HP bar (right)
             var hpFrame = new GameObject("HPFrame");
@@ -110,13 +110,13 @@ namespace StickEvolve.UI
             _hpText.color = Color.white;
         }
 
-        private void AddHudIcon(string name, Vector2 pos, Vector2 size, Sprite sprite, Color color)
+        private void AddHudIcon(string name, Vector2 pos, Vector2 size, Sprite sprite, Color color, Vector2 anchor)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(transform, false);
             var rt = (RectTransform)go.transform;
-            rt.anchorMin = new Vector2(0.5f, 0.5f);
-            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.anchorMin = anchor;
+            rt.anchorMax = anchor;
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
