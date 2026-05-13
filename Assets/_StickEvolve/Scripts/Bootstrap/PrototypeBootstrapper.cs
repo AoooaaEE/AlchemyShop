@@ -19,6 +19,7 @@ namespace StickEvolve.Bootstrap
     {
         [Header("Конфиг")]
         [SerializeField] private int wavesToPlay = 50;
+        [SerializeField] private float heroMoveSpeed = 4.5f;
 
         private StickGame _game;
         private WaveSpawner _spawner;
@@ -32,6 +33,16 @@ namespace StickEvolve.Bootstrap
         private float _heroSpacing = 1.5f;
         private float _heroX = -5f;
         private float _enemyX = 6f;
+
+        private int _rerollCount;
+        private const int RerollBaseCost = 3;
+        private const int BuyAllCost = 30;
+
+        private static readonly HeroClass[] ExtraClassPool =
+        {
+            HeroClass.Archer, HeroClass.Mage, HeroClass.Tank,
+            HeroClass.Archer, HeroClass.Tank,
+        };
 
         private void Start()
         {
@@ -150,6 +161,8 @@ namespace StickEvolve.Bootstrap
         private void BuildCardUI()
         {
             _cardUI = CardChoiceUI.Create(_canvas);
+            _cardUI.OnRerollClicked += OnShopReroll;
+            _cardUI.OnBuyAllClicked += OnShopBuyAll;
         }
 
         private void BuildGameOverUI()
@@ -186,7 +199,7 @@ namespace StickEvolve.Bootstrap
 
         private void SpawnInitialHero()
         {
-            var h = SpawnHeroAt(new Vector3(_heroX, 0f, 0f), new Color(0.4f, 0.7f, 1f));
+            var h = SpawnHeroAt(new Vector3(_heroX, 0f, 0f), HeroClass.Warrior);
             _heroes.Add(h);
             HookHeroDeath(h);
 
@@ -202,18 +215,24 @@ namespace StickEvolve.Bootstrap
         {
             int idx = _heroes.Count;
             float y = (idx % 2 == 0 ? 1f : -1f) * Mathf.Ceil(idx / 2f) * _heroSpacing;
-            var h = SpawnHeroAt(new Vector3(_heroX - (idx * 0.2f), y, 0f), new Color(0.45f, 0.85f, 0.55f));
+            var cls = ExtraClassPool[Random.Range(0, ExtraClassPool.Length)];
+            var h = SpawnHeroAt(new Vector3(_heroX - (idx * 0.2f), y, 0f), cls);
             _heroes.Add(h);
             HookHeroDeath(h);
             return h;
         }
 
-        private Hero SpawnHeroAt(Vector3 pos, Color tint)
+        private Hero SpawnHeroAt(Vector3 pos, HeroClass cls)
         {
-            var go = new GameObject("Hero");
+            var s = HeroClassStats.Get(cls);
+            var go = new GameObject($"Hero_{cls}");
             go.transform.position = pos;
 
-            var cfg = StickmanConfig.Default(tint);
+            var cfg = StickmanConfig.Default(s.tint);
+            cfg.bodyScale = s.bodyScale;
+            cfg.hasHat = s.hasHat;
+            cfg.hatColor = new Color(s.tint.r * 0.4f, s.tint.g * 0.4f, s.tint.b * 0.6f);
+            cfg.wideShoulders = s.wideShoulders;
             cfg.raiseRightArm = true;
             StickmanBuilder.Build(go, cfg);
 
@@ -225,9 +244,10 @@ namespace StickEvolve.Bootstrap
             go.AddComponent<Health>();
 
             var hero = go.AddComponent<Hero>();
-            hero.bulletColor = new Color(Mathf.Clamp01(tint.r + 0.1f), Mathf.Clamp01(tint.g + 0.2f), 1f);
+            hero.HeroClass = cls;
+            hero.bulletColor = new Color(Mathf.Clamp01(s.tint.r + 0.1f), Mathf.Clamp01(s.tint.g + 0.2f), 1f);
 
-            // Применяем накопленные апгрейды из карт (или базу при чистом сейве).
+            // Применяем накопленные апгрейды из карт (или базу при чистом сейве) + классовые множители.
             CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
         }
@@ -261,6 +281,30 @@ namespace StickEvolve.Bootstrap
             _spawner.StartNextWave();
         }
 
+        private void Update()
+        {
+            if (_heroes.Count == 0 || _cam == null) return;
+            if (_cardUI != null && _cardUI.IsOpen) return;
+            if (_game != null && _game.IsGameOver) return;
+
+            float vert = 0f;
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) vert += 1f;
+            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) vert -= 1f;
+            if (Mathf.Approximately(vert, 0f)) return;
+
+            float dy = vert * heroMoveSpeed * Time.deltaTime;
+            float halfH = _cam.orthographicSize - 0.6f;
+            for (int i = 0; i < _heroes.Count; i++)
+            {
+                var h = _heroes[i];
+                if (h == null) continue;
+                if (!h.gameObject.activeSelf) continue;
+                var p = h.transform.position;
+                p.y = Mathf.Clamp(p.y + dy, -halfH, halfH);
+                h.transform.position = p;
+            }
+        }
+
         private void OnWaveCompleted(int waveNum)
         {
             _game.NotifyWaveCompleted(waveNum);
@@ -270,8 +314,34 @@ namespace StickEvolve.Bootstrap
             // Между волнами: поднимаем всех павших героев и лечим всех живых.
             ReviveAndHealHeroes();
 
+            _rerollCount = 0;
             var options = CardCatalog.RollThree();
-            _cardUI.Show(options, OnCardPicked);
+            _cardUI.Show(options, _game.Economy.Gold, RerollBaseCost, BuyAllCost, OnCardPicked);
+        }
+
+        private void OnShopReroll()
+        {
+            int cost = RerollBaseCost + _rerollCount;
+            if (_game.Economy.Gold < cost) return;
+            _game.Economy.TrySpend(cost);
+            _rerollCount++;
+            var newOptions = CardCatalog.RollThree();
+            _cardUI.ReplaceCards(newOptions);
+            _cardUI.RefreshShop(_game.Economy.Gold, RerollBaseCost + _rerollCount, BuyAllCost);
+        }
+
+        private void OnShopBuyAll()
+        {
+            if (_game.Economy.Gold < BuyAllCost) return;
+            var current = _cardUI.CurrentOptions;
+            if (current == null || current.Count == 0) return;
+            _game.Economy.TrySpend(BuyAllCost);
+            for (int i = 0; i < current.Count; i++)
+                CardEffect.Apply(current[i]);
+            _cardUI.Hide();
+            _game.PersistSave();
+            _game.NotifyWaveStarted(_spawner.waves[_spawner.CurrentWaveIndex].waveNumber);
+            _spawner.StartNextWave();
         }
 
         private void ReviveAndHealHeroes()
@@ -334,6 +404,11 @@ namespace StickEvolve.Bootstrap
             {
                 _spawner.OnWaveCompleted -= OnWaveCompleted;
                 _spawner.OnAllWavesCompleted -= OnAllWavesCompleted;
+            }
+            if (_cardUI != null)
+            {
+                _cardUI.OnRerollClicked -= OnShopReroll;
+                _cardUI.OnBuyAllClicked -= OnShopBuyAll;
             }
         }
     }

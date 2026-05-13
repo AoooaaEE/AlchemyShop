@@ -10,6 +10,9 @@ namespace StickEvolve.Combat
     [RequireComponent(typeof(TeamMember))]
     public class Hero : MonoBehaviour
     {
+        [Header("Класс")]
+        public HeroClass HeroClass = HeroClass.Warrior;
+
         [Header("Боевые параметры")]
         public float damage = 1f;
         public float fireRate = 1.5f;
@@ -17,6 +20,7 @@ namespace StickEvolve.Combat
         public float bulletSpeed = 14f;
         public float critChance = 0f;
         public float critMultiplier = 2f;
+        public float bulletExplosionRadius = 0f;
 
         [Header("Визуал")]
         public Color bulletColor = new Color(0.4f, 0.8f, 1f);
@@ -53,6 +57,7 @@ namespace StickEvolve.Combat
             var b = Bullet.Spawn(transform.position + (Vector3)(dir * 0.4f), dir, damage, bulletSpeed, CombatTeam.Enemies, bulletColor);
             b.critChance = critChance;
             b.critMultiplier = critMultiplier;
+            b.explosionRadius = bulletExplosionRadius;
         }
 
         private Enemy FindNearestEnemy()

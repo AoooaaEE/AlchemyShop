@@ -16,6 +16,8 @@ namespace StickEvolve.Combat
         public float maxLifetime = 3f;
         public float critChance = 0f;
         public float critMultiplier = 2f;
+        public float explosionRadius = 0f;
+        public float explosionSplashRatio = 0.6f;
 
         private float _age;
 
@@ -75,7 +77,68 @@ namespace StickEvolve.Combat
             }
             dmg.TakeDamage(final, transform.position);
             DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white);
+
+            if (explosionRadius > 0f)
+                ApplySplash(other, final * explosionSplashRatio);
+
             Destroy(gameObject);
+        }
+
+        private void ApplySplash(Collider2D primaryTarget, float splashDamage)
+        {
+            var hits = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
+            for (int i = 0; i < hits.Length; i++)
+            {
+                var o = hits[i];
+                if (o == null || o == primaryTarget) continue;
+                var team = o.GetComponent<TeamMember>() ?? o.GetComponentInParent<TeamMember>();
+                if (team == null || team.team != targetTeam) continue;
+                var d = o.GetComponent<IDamageable>() ?? o.GetComponentInParent<IDamageable>();
+                if (d == null || !d.IsAlive) continue;
+                d.TakeDamage(splashDamage, transform.position);
+            }
+            SpawnExplosionFx(transform.position, explosionRadius);
+        }
+
+        private static void SpawnExplosionFx(Vector3 pos, float radius)
+        {
+            var go = new GameObject("ExplosionFx");
+            go.transform.position = pos;
+            go.transform.localScale = Vector3.one * radius * 2f;
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = SpriteFactory.Circle();
+            sr.color = new Color(1f, 0.8f, 0.3f, 0.55f);
+            sr.sortingOrder = 4;
+            var fx = go.AddComponent<ExplosionFxFade>();
+            fx.lifetime = 0.25f;
+        }
+    }
+
+    public class ExplosionFxFade : MonoBehaviour
+    {
+        public float lifetime = 0.25f;
+        private float _age;
+        private SpriteRenderer _sr;
+        private Vector3 _startScale;
+
+        private void Awake()
+        {
+            _sr = GetComponent<SpriteRenderer>();
+            _startScale = transform.localScale;
+        }
+
+        private void Update()
+        {
+            _age += Time.deltaTime;
+            float t = Mathf.Clamp01(_age / lifetime);
+            if (_sr != null)
+            {
+                var c = _sr.color;
+                c.a = Mathf.Lerp(0.55f, 0f, t);
+                _sr.color = c;
+            }
+            transform.localScale = _startScale * Mathf.Lerp(0.8f, 1.2f, t);
+            if (_age >= lifetime) Destroy(gameObject);
         }
     }
 }

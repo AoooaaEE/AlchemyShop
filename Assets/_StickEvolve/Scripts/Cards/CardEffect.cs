@@ -54,14 +54,16 @@ namespace StickEvolve.Cards
 
         private static void ApplyDefaultsTo(Hero h, HeroDefaults d, bool fullHeal)
         {
-            h.damage = d.damage;
-            h.fireRate = d.fireRate;
-            h.range = d.range;
+            var s = HeroClassStats.Get(h.HeroClass);
+            h.damage = d.damage * s.dmgMult;
+            h.fireRate = d.fireRate * s.fireRateMult;
+            h.range = d.range * s.rangeMult;
             h.bulletSpeed = d.bulletSpeed;
             h.critChance = d.critChance;
             h.critMultiplier = d.critMultiplier;
+            h.bulletExplosionRadius = s.bulletExplosionRadius;
             var hp = h.GetComponent<Health>();
-            if (hp != null) hp.Configure(d.maxHp, fullHeal);
+            if (hp != null) hp.Configure(d.maxHp * s.hpMult, fullHeal);
         }
 
         private static void FullHealAlive()
