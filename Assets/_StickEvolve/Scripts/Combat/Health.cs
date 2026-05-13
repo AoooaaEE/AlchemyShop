@@ -10,7 +10,9 @@ namespace StickEvolve.Combat
     }
 
     /// <summary>
-    /// Универсальное здоровье. Сидит на Hero и Enemy. Триггерит OnDeath один раз.
+    /// Универсальное здоровье. Сидит на Hero и Enemy.
+    /// OnDeath срабатывает один раз за «жизнь». После ревайва через Configure
+    /// (CurrentHp снова > 0) OnDeath сможет сработать заново на следующей смерти.
     /// </summary>
     public class Health : MonoBehaviour, IDamageable
     {
@@ -30,6 +32,8 @@ namespace StickEvolve.Combat
         {
             maxHp = Mathf.Max(1f, newMax);
             if (fullHeal) CurrentHp = maxHp;
+            else CurrentHp = Mathf.Min(CurrentHp, maxHp);
+            if (CurrentHp > 0f) _deathFired = false;
             OnHpChanged?.Invoke(CurrentHp, maxHp);
         }
 

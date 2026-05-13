@@ -92,5 +92,19 @@ namespace StickEvolve.Wave
                 if (e != null && e.IsAlive)
                     e.Health.TakeDamage(99999f, e.transform.position);
         }
+
+        /// <summary>
+        /// Останавливает текущий спавн (без сброса CurrentWaveIndex и списка волн).
+        /// Вызывается на Game Over, чтобы новые враги не появлялись поверх экрана.
+        /// </summary>
+        public void StopCurrent()
+        {
+            if (_spawnRoutine != null)
+            {
+                StopCoroutine(_spawnRoutine);
+                _spawnRoutine = null;
+            }
+            IsRunning = false;
+        }
     }
 }

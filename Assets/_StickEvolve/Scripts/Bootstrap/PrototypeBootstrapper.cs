@@ -375,6 +375,8 @@ namespace StickEvolve.Bootstrap
 
         private void OnGameOver()
         {
+            // Останавливаем волну: без этого новые враги продолжают спавниться и двигаться поверх экрана Game Over.
+            if (_spawner != null) _spawner.StopCurrent();
             _gameOverUI.Show(_game.CurrentWaveNumber);
         }
 
