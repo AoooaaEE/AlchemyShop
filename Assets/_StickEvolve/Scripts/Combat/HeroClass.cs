@@ -37,6 +37,8 @@ namespace StickEvolve.Combat
             public bool isHealer;            // стреляет в раненых союзников
             public float berserkerScale;     // 0..N — насколько урон растёт по мере падения HP
             public float ninjaCloneChance;   // 0..1 — шанс при крите спавнить клона
+            public bool hasCape;
+            public Color capeColor;
         }
 
         public static Stats Get(HeroClass cls)
@@ -60,6 +62,7 @@ namespace StickEvolve.Combat
                         tint = new Color(0.75f, 0.5f, 1f),
                         hasHat = true, wideShoulders = false, bodyScale = 0.95f,
                         label = "Маг",
+                        hasCape = true, capeColor = new Color(0.45f, 0.25f, 0.65f),
                     };
                 case HeroClass.Tank:
                     return new Stats
@@ -79,6 +82,7 @@ namespace StickEvolve.Combat
                         hasHat = true, wideShoulders = false, bodyScale = 0.95f,
                         label = "Жрец",
                         isHealer = true,
+                        hasCape = true, capeColor = new Color(0.95f, 0.95f, 0.85f),
                     };
                 case HeroClass.Berserker:
                     return new Stats
@@ -111,6 +115,7 @@ namespace StickEvolve.Combat
                         hasHat = false, wideShoulders = false, bodyScale = 0.95f,
                         label = "Ниндзя",
                         ninjaCloneChance = 0.6f,
+                        hasCape = true, capeColor = new Color(0.10f, 0.10f, 0.12f),
                     };
                 default:
                     return new Stats

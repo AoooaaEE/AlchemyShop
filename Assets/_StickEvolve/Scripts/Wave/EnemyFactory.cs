@@ -55,6 +55,8 @@ namespace StickEvolve.Wave
         {
             var color = TeamColor(kind);
             var cfg = StickmanConfig.Default(color);
+            // Глаза у врагов — красные, чтобы они визуально отличались от героев.
+            cfg.eyeColor = new Color(0.95f, 0.15f, 0.15f);
 
             switch (kind)
             {
@@ -77,6 +79,7 @@ namespace StickEvolve.Wave
                     cfg.headSize = 0.48f;
                     cfg.torsoHeight = 0.7f;
                     cfg.legLength = 0.5f;
+                    cfg.handSize = 0.16f;
                     break;
                 case EnemyKind.Mage:
                     cfg.bodyScale = 1f;
@@ -84,6 +87,8 @@ namespace StickEvolve.Wave
                     cfg.hasHat = true;
                     cfg.hatColor = new Color(0.4f, 0.15f, 0.55f);
                     cfg.headSize = 0.44f;
+                    cfg.hasCape = true;
+                    cfg.capeColor = new Color(0.35f, 0.10f, 0.5f);
                     break;
                 case EnemyKind.Boss:
                     cfg.bodyScale = 1.7f;
@@ -93,6 +98,12 @@ namespace StickEvolve.Wave
                     cfg.torsoHeight = 0.8f;
                     cfg.legLength = 0.6f;
                     cfg.armLength = 0.7f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.25f, 0.02f, 0.02f);
+                    cfg.hasCape = true;
+                    cfg.capeColor = new Color(0.30f, 0.05f, 0.05f);
+                    cfg.handSize = 0.18f;
+                    cfg.eyeColor = new Color(1f, 0.5f, 0f);
                     break;
                 case EnemyKind.Healer:
                     cfg.bodyScale = 0.95f;
@@ -100,6 +111,9 @@ namespace StickEvolve.Wave
                     cfg.hasHat = true;
                     cfg.hatColor = new Color(1f, 1f, 1f);
                     cfg.headSize = 0.42f;
+                    cfg.hasCape = true;
+                    cfg.capeColor = new Color(0.85f, 0.90f, 0.80f);
+                    cfg.eyeColor = new Color(0.35f, 0.85f, 0.45f);
                     break;
                 case EnemyKind.Shielder:
                     cfg.bodyScale = 1.1f;
@@ -107,6 +121,8 @@ namespace StickEvolve.Wave
                     cfg.wideShoulders = true;
                     cfg.headSize = 0.46f;
                     cfg.torsoHeight = 0.7f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.35f, 0.40f, 0.50f);
                     break;
                 case EnemyKind.Splitter:
                     float mul = splitTier >= 2 ? 1.1f : 0.65f;
@@ -129,6 +145,8 @@ namespace StickEvolve.Wave
                     cfg.headSize = 0.48f;
                     cfg.bodyColor = new Color(0.95f, 0.65f, 0.2f);
                     cfg.skinColor = new Color(0.9f, 0.6f, 0.2f);
+                    cfg.eyeColor = new Color(1f, 0.95f, 0f); // ядовито-жёлтые глаза
+                    cfg.handSize = 0.14f;
                     break;
             }
 
