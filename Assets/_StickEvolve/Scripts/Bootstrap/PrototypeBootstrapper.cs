@@ -41,7 +41,7 @@ namespace StickEvolve.Bootstrap
         private static readonly HeroClass[] ExtraClassPool =
         {
             HeroClass.Archer, HeroClass.Mage, HeroClass.Tank,
-            HeroClass.Archer, HeroClass.Tank,
+            HeroClass.Archer, HeroClass.Tank, HeroClass.Berserker,
         };
 
         private void Start()
@@ -57,6 +57,8 @@ namespace StickEvolve.Bootstrap
             BuildGameOverUI();
 
             CardEffect.ExtraHeroSpawner = SpawnExtraHero;
+            CardEffect.ExtraHeroSpawnerByClass = SpawnExtraHeroOfClass;
+            Hero.CloneSpawnerFunc = SpawnHeroClone;
 
             SpawnInitialHero();
             BeginGame();
@@ -94,23 +96,96 @@ namespace StickEvolve.Bootstrap
 
         private void BuildBackground()
         {
-            // Тёмная полоса земли
-            var ground = new GameObject("Ground");
-            var sr = ground.AddComponent<SpriteRenderer>();
-            sr.sprite = SpriteFactory.White();
-            sr.color = new Color(0.13f, 0.15f, 0.2f);
-            sr.sortingOrder = -10;
-            ground.transform.position = new Vector3(0f, -3.2f, 0f);
-            ground.transform.localScale = new Vector3(20f, 4f, 1f);
+            // — Небо: градиент из 4 слоёв (сверху — тёмно-синий, к горизонту — мягкий персик) —
+            var skyColors = new[]
+            {
+                new Color(0.10f, 0.13f, 0.25f),
+                new Color(0.18f, 0.22f, 0.40f),
+                new Color(0.40f, 0.35f, 0.55f),
+                new Color(0.85f, 0.55f, 0.45f),
+            };
+            float skyTop = 5.5f;
+            float skyBottom = -1.0f;
+            float bandH = (skyTop - skyBottom) / skyColors.Length;
+            for (int i = 0; i < skyColors.Length; i++)
+            {
+                var band = new GameObject($"Sky_{i}");
+                var sr = band.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.White();
+                sr.color = skyColors[i];
+                sr.sortingOrder = -50 + i;
+                band.transform.position = new Vector3(0f, skyTop - bandH * (i + 0.5f), 0f);
+                band.transform.localScale = new Vector3(40f, bandH + 0.05f, 1f);
+            }
 
-            // Светлая полоса неба (просто более светлый прямоугольник сверху)
-            var sky = new GameObject("Sky");
-            var skySR = sky.AddComponent<SpriteRenderer>();
-            skySR.sprite = SpriteFactory.White();
-            skySR.color = new Color(0.18f, 0.22f, 0.3f);
-            skySR.sortingOrder = -11;
-            sky.transform.position = new Vector3(0f, 2f, 0f);
-            sky.transform.localScale = new Vector3(20f, 8f, 1f);
+            // — Облака (мягкие кружки), дрейфуют влево —
+            for (int i = 0; i < 4; i++)
+            {
+                var c = new GameObject($"Cloud_{i}");
+                var sr = c.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.SoftCircle();
+                sr.color = new Color(1f, 1f, 1f, 0.5f);
+                sr.sortingOrder = -30;
+                c.transform.position = new Vector3(Random.Range(-8f, 8f), Random.Range(2.5f, 4.5f), 0f);
+                c.transform.localScale = new Vector3(Random.Range(2.5f, 4f), Random.Range(0.9f, 1.4f), 1f);
+                var drift = c.AddComponent<ParallaxDrift>();
+                drift.speed = Random.Range(0.05f, 0.18f);
+                drift.resetX = 12f;
+                drift.wrapX = -12f;
+            }
+
+            // — Дальние горы (слабо тёмные, ниже горизонта) —
+            for (int i = 0; i < 6; i++)
+            {
+                var m = new GameObject($"MountainFar_{i}");
+                var sr = m.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Triangle();
+                sr.color = new Color(0.30f, 0.30f, 0.45f);
+                sr.sortingOrder = -22;
+                m.transform.position = new Vector3(-9f + i * 3.5f + Random.Range(-0.5f, 0.5f), -1.6f, 0f);
+                m.transform.localScale = new Vector3(Random.Range(3.5f, 5.5f), Random.Range(2f, 2.8f), 1f);
+            }
+
+            // — Ближние горы (темнее, больше) —
+            for (int i = 0; i < 5; i++)
+            {
+                var m = new GameObject($"MountainNear_{i}");
+                var sr = m.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Triangle();
+                sr.color = new Color(0.18f, 0.18f, 0.30f);
+                sr.sortingOrder = -20;
+                m.transform.position = new Vector3(-9f + i * 4.2f + Random.Range(-0.5f, 0.5f), -2.2f, 0f);
+                m.transform.localScale = new Vector3(Random.Range(4f, 6f), Random.Range(2.5f, 3.5f), 1f);
+            }
+
+            // — Земля: основная полоса + верхний травяной слой —
+            var ground = new GameObject("Ground");
+            var groundSR = ground.AddComponent<SpriteRenderer>();
+            groundSR.sprite = SpriteFactory.White();
+            groundSR.color = new Color(0.18f, 0.13f, 0.10f);
+            groundSR.sortingOrder = -10;
+            ground.transform.position = new Vector3(0f, -3.5f, 0f);
+            ground.transform.localScale = new Vector3(40f, 4.5f, 1f);
+
+            var grass = new GameObject("Grass");
+            var grassSR = grass.AddComponent<SpriteRenderer>();
+            grassSR.sprite = SpriteFactory.White();
+            grassSR.color = new Color(0.30f, 0.45f, 0.20f);
+            grassSR.sortingOrder = -9;
+            grass.transform.position = new Vector3(0f, -1.45f, 0f);
+            grass.transform.localScale = new Vector3(40f, 0.18f, 1f);
+
+            // — Кустики травы по линии горизонта —
+            for (int i = 0; i < 18; i++)
+            {
+                var t = new GameObject($"GrassTuft_{i}");
+                var sr = t.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.Triangle();
+                sr.color = new Color(0.35f, 0.55f, 0.22f);
+                sr.sortingOrder = -8;
+                t.transform.position = new Vector3(-10f + i * 1.2f + Random.Range(-0.3f, 0.3f), -1.42f, 0f);
+                t.transform.localScale = new Vector3(Random.Range(0.18f, 0.28f), Random.Range(0.18f, 0.32f), 1f);
+            }
         }
 
         private void BuildCanvas()
@@ -188,9 +263,14 @@ namespace StickEvolve.Bootstrap
                 };
                 // Постепенный ввод типов.
                 w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 3 + i / 2 });
-                if (i >= 2) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner, count = 1 + (i - 1) / 3 });
-                if (i >= 3) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 1 + (i - 3) / 4 });
-                if (i >= 4) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage, count = 1 + (i - 4) / 5 });
+                if (i >= 2)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 1 + (i - 1) / 3 });
+                if (i >= 3)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 + (i - 3) / 4 });
+                if (i >= 4)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage,     count = 1 + (i - 4) / 5 });
+                if (i >= 5)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 1 + (i - 5) / 6 });
+                if (i >= 6)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 1 + (i - 6) / 5 });
+                if (i >= 7)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 1 + (i - 7) / 6 });
+                if (i >= 8)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 1 + (i - 8) / 5 });
+                if (i >= 9)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 1 + (i - 9) / 5 });
                 if (i % 5 == 0) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
                 waves.Add(w);
             }
@@ -203,23 +283,36 @@ namespace StickEvolve.Bootstrap
             _heroes.Add(h);
             HookHeroDeath(h);
 
-            // Если из карточного прогресса уже накоплены дополнительные герои — спавним их.
+            // Сначала восстанавливаем героев, нанятых картами конкретных классов…
             var defaults = CardProgression.Compute();
+            for (int i = 0; i < defaults.classHires.Count; i++)
+                SpawnExtraHeroOfClass(defaults.classHires[i]);
+
+            // …потом обычные «none-specific» дополнительные герои.
             for (int i = 0; i < defaults.extraHeroes; i++)
-            {
                 SpawnExtraHero();
-            }
         }
 
         private Hero SpawnExtraHero()
         {
+            var cls = ExtraClassPool[Random.Range(0, ExtraClassPool.Length)];
+            return SpawnExtraHeroOfClass(cls);
+        }
+
+        private Hero SpawnExtraHeroOfClass(HeroClass cls)
+        {
             int idx = _heroes.Count;
             float y = (idx % 2 == 0 ? 1f : -1f) * Mathf.Ceil(idx / 2f) * _heroSpacing;
-            var cls = ExtraClassPool[Random.Range(0, ExtraClassPool.Length)];
             var h = SpawnHeroAt(new Vector3(_heroX - (idx * 0.2f), y, 0f), cls);
             _heroes.Add(h);
             HookHeroDeath(h);
             return h;
+        }
+
+        // Клон Ninja: спавнится временно, не входит в постоянный отряд и не триггерит GameOver на смерти.
+        private Hero SpawnHeroClone(HeroClass cls, Vector3 pos)
+        {
+            return SpawnHeroAt(pos, cls);
         }
 
         private Hero SpawnHeroAt(Vector3 pos, HeroClass cls)
@@ -235,6 +328,16 @@ namespace StickEvolve.Bootstrap
             cfg.wideShoulders = s.wideShoulders;
             cfg.raiseRightArm = true;
             StickmanBuilder.Build(go, cfg);
+
+            // Тень под героем —
+            var sh = new GameObject("Shadow");
+            sh.transform.SetParent(go.transform, false);
+            sh.transform.localPosition = new Vector3(0f, -0.85f, 0f);
+            sh.transform.localScale = new Vector3(0.85f, 0.22f, 1f);
+            var shSR = sh.AddComponent<SpriteRenderer>();
+            shSR.sprite = SpriteFactory.SoftCircle();
+            shSR.color = new Color(0f, 0f, 0f, 0.5f);
+            shSR.sortingOrder = 1;
 
             var col = go.AddComponent<CapsuleCollider2D>();
             col.size = new Vector2(0.6f, 1.4f);
@@ -260,9 +363,22 @@ namespace StickEvolve.Bootstrap
             {
                 if (hero != null && hero.gameObject != null)
                     hero.gameObject.SetActive(false);
-                if (HeroRegistry.Instance.Alive.Count == 0)
+                if (CountNonCloneAlive() == 0)
                     StartCoroutine(CheckGameOverAfterDelay());
             };
+        }
+
+        // Клоны (Ninja) не входят в постоянный отряд: их живые объекты не должны блокировать GameOver.
+        private static int CountNonCloneAlive()
+        {
+            int n = 0;
+            var alive = HeroRegistry.Instance.Alive;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                var h = alive[i];
+                if (h != null && !h.isClone) n++;
+            }
+            return n;
         }
 
         // После смерти всех героев ждём пару кадров: если волна в этот момент завершилась (босс убит
@@ -271,7 +387,7 @@ namespace StickEvolve.Bootstrap
         {
             yield return null;
             yield return null;
-            if (HeroRegistry.Instance.Alive.Count == 0 && EnemyRegistry.Instance.Alive.Count > 0)
+            if (CountNonCloneAlive() == 0 && EnemyRegistry.Instance.Alive.Count > 0)
                 _game.TriggerGameOver();
         }
 
@@ -401,6 +517,8 @@ namespace StickEvolve.Bootstrap
         private void OnDestroy()
         {
             CardEffect.ExtraHeroSpawner = null;
+            CardEffect.ExtraHeroSpawnerByClass = null;
+            Hero.CloneSpawnerFunc = null;
             if (_game != null) _game.OnGameOver -= OnGameOver;
             if (_spawner != null)
             {

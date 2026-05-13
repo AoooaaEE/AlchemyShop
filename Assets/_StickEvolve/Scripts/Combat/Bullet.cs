@@ -18,6 +18,8 @@ namespace StickEvolve.Combat
         public float critMultiplier = 2f;
         public float explosionRadius = 0f;
         public float explosionSplashRatio = 0.6f;
+        public bool isHealing;          // true — лечит союзника (Healer)
+        public Hero ownerHero;          // для крит-триггеров (напр. Ninja-клон)
 
         private float _age;
 
@@ -65,6 +67,13 @@ namespace StickEvolve.Combat
             var team = other.GetComponent<TeamMember>() ?? other.GetComponentInParent<TeamMember>();
             if (team == null || team.team != targetTeam) return;
 
+            if (isHealing)
+            {
+                ApplyHeal(other);
+                Destroy(gameObject);
+                return;
+            }
+
             var dmg = other.GetComponent<IDamageable>() ?? other.GetComponentInParent<IDamageable>();
             if (dmg == null || !dmg.IsAlive) return;
 
@@ -78,10 +87,20 @@ namespace StickEvolve.Combat
             dmg.TakeDamage(final, transform.position);
             DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white);
 
+            if (crit && ownerHero != null) ownerHero.OnCrit(transform.position);
+
             if (explosionRadius > 0f)
                 ApplySplash(other, final * explosionSplashRatio);
 
             Destroy(gameObject);
+        }
+
+        private void ApplyHeal(Collider2D ally)
+        {
+            var hp = ally.GetComponent<Health>() ?? ally.GetComponentInParent<Health>();
+            if (hp == null || !hp.IsAlive) return;
+            hp.Heal(damage);
+            DamageNumber.Spawn(transform.position, damage, new Color(0.4f, 1f, 0.5f));
         }
 
         private void ApplySplash(Collider2D primaryTarget, float splashDamage)
@@ -100,7 +119,7 @@ namespace StickEvolve.Combat
             SpawnExplosionFx(transform.position, explosionRadius);
         }
 
-        private static void SpawnExplosionFx(Vector3 pos, float radius)
+        public static void SpawnExplosionFx(Vector3 pos, float radius)
         {
             var go = new GameObject("ExplosionFx");
             go.transform.position = pos;

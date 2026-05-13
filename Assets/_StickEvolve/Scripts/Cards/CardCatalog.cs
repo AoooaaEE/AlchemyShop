@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using StickEvolve.Combat;
 using UnityEngine;
 
 namespace StickEvolve.Cards
@@ -54,8 +55,22 @@ namespace StickEvolve.Cards
                 Make("rate_x2",   "Лихорадка",         "Скорость атаки ×2",        CardEffectKind.FireRateMultiplier,  2.00f, 0f, CardRarity.Legendary, gold),
                 Make("extra_hero","Подкрепление",     "+1 герой",                  CardEffectKind.SpawnExtraHero,      1f,    0f, CardRarity.Legendary, gold),
                 Make("extra_hero_2","Отряд",            "+2 героя",                  CardEffectKind.SpawnExtraHero,      2f,    0f, CardRarity.Legendary, gold),
+
+                // — Наёмники конкретных классов (Epic/Legendary, низкий шанс) —
+                MakeHireCard("hire_archer",   "Найм: Лучник",    "+1 Лучник в отряд",     HeroClass.Archer,    CardRarity.Epic,      new Color(0.55f, 0.95f, 0.4f)),
+                MakeHireCard("hire_mage",     "Найм: Маг",        "+1 Маг в отряд",         HeroClass.Mage,      CardRarity.Epic,      new Color(0.75f, 0.5f, 1f)),
+                MakeHireCard("hire_tank",     "Найм: Танк",       "+1 Танк в отряд",        HeroClass.Tank,      CardRarity.Epic,      new Color(1f, 0.55f, 0.3f)),
+                MakeHireCard("hire_healer",   "Найм: Жрец",      "+1 Жрец-лекарь",        HeroClass.Healer,    CardRarity.Legendary, new Color(0.4f, 1f, 0.6f)),
+                MakeHireCard("hire_berserker","Найм: Берсерк",   "+1 Берсерк",             HeroClass.Berserker, CardRarity.Legendary, new Color(1f, 0.3f, 0.3f)),
+                MakeHireCard("hire_sniper",   "Найм: Снайпер",   "+1 Снайпер",             HeroClass.Sniper,    CardRarity.Legendary, new Color(0.5f, 0.6f, 0.9f)),
+                MakeHireCard("hire_ninja",    "Найм: Ниндзя",    "+1 Ниндзя",              HeroClass.Ninja,     CardRarity.Legendary, new Color(0.3f, 0.3f, 0.4f)),
             };
             return list;
+        }
+
+        private static CardSO MakeHireCard(string id, string name, string desc, HeroClass cls, CardRarity rarity, Color color)
+        {
+            return Make(id, name, desc, CardEffectKind.SpawnHeroOfClass, 1f, (float)(int)cls, rarity, color);
         }
 
         public static CardSO GetById(string id)

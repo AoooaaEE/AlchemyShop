@@ -17,6 +17,7 @@ namespace StickEvolve.Combat
     public class Health : MonoBehaviour, IDamageable
     {
         [SerializeField] private float maxHp = 10f;
+        [Range(0f, 0.95f)] public float damageReductionFlat;  // 0..0.95: процент от входящего урона срезается
 
         public float MaxHp => maxHp;
         public float CurrentHp { get; private set; }
@@ -46,8 +47,10 @@ namespace StickEvolve.Combat
         public void TakeDamage(float amount, Vector3 hitWorldPos)
         {
             if (!IsAlive || amount <= 0f) return;
-            CurrentHp = Mathf.Max(0f, CurrentHp - amount);
-            OnDamaged?.Invoke(amount, hitWorldPos);
+            float effective = amount * Mathf.Clamp01(1f - damageReductionFlat);
+            if (effective <= 0f) return;
+            CurrentHp = Mathf.Max(0f, CurrentHp - effective);
+            OnDamaged?.Invoke(effective, hitWorldPos);
             OnHpChanged?.Invoke(CurrentHp, maxHp);
             if (CurrentHp <= 0f && !_deathFired)
             {

@@ -1,4 +1,5 @@
 using StickEvolve.Combat;
+using StickEvolve.Economy;
 using UnityEngine;
 
 namespace StickEvolve.Wave
@@ -8,12 +9,33 @@ namespace StickEvolve.Wave
     /// </summary>
     public static class EnemyFactory
     {
+        /// <summary>Последний WaveConfig, использованный для спавна. Используется Splitter-ом для миньонов.</summary>
+        private static WaveConfig _lastSpawnCfg;
+
         public static Enemy Spawn(EnemyKind kind, Vector3 pos, WaveConfig cfg)
+        {
+            _lastSpawnCfg = cfg;
+            return SpawnInternal(kind, pos, cfg, splitTier: kind == EnemyKind.Splitter ? 2 : 0);
+        }
+
+        /// <summary>Мини-копия для Splitter-ов: половинный HP, без дальнейшего деления, без шапки.</summary>
+        public static Enemy SpawnMini(Vector3 pos, int splitTier)
+        {
+            var cfg = _lastSpawnCfg ?? new WaveConfig
+            {
+                enemyHpMultiplier = 1f, enemyDamageMultiplier = 1f, enemyGoldDrop = 1,
+            };
+            return SpawnInternal(EnemyKind.Splitter, pos, cfg, splitTier);
+        }
+
+        private static Enemy SpawnInternal(EnemyKind kind, Vector3 pos, WaveConfig cfg, int splitTier)
         {
             var go = new GameObject($"Enemy_{kind}");
             go.transform.position = pos;
 
-            BuildVisual(go, kind);
+            BuildVisual(go, kind, splitTier);
+            AddShadow(go);
+            AddShielderShield(go, kind);
 
             var col = go.AddComponent<CapsuleCollider2D>();
             col.size = new Vector2(0.6f, 1.4f);
@@ -23,12 +45,13 @@ namespace StickEvolve.Wave
             var hp = go.AddComponent<Health>();
             var enemy = go.AddComponent<Enemy>();
             enemy.kind = kind;
+            enemy.splitTier = splitTier;
 
-            ApplyStats(enemy, hp, kind, cfg);
+            ApplyStats(enemy, hp, kind, cfg, splitTier);
             return enemy;
         }
 
-        private static void BuildVisual(GameObject root, EnemyKind kind)
+        private static void BuildVisual(GameObject root, EnemyKind kind, int splitTier)
         {
             var color = TeamColor(kind);
             var cfg = StickmanConfig.Default(color);
@@ -71,22 +94,90 @@ namespace StickEvolve.Wave
                     cfg.legLength = 0.6f;
                     cfg.armLength = 0.7f;
                     break;
+                case EnemyKind.Healer:
+                    cfg.bodyScale = 0.95f;
+                    cfg.limbThickness = 0.13f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(1f, 1f, 1f);
+                    cfg.headSize = 0.42f;
+                    break;
+                case EnemyKind.Shielder:
+                    cfg.bodyScale = 1.1f;
+                    cfg.limbThickness = 0.2f;
+                    cfg.wideShoulders = true;
+                    cfg.headSize = 0.46f;
+                    cfg.torsoHeight = 0.7f;
+                    break;
+                case EnemyKind.Splitter:
+                    float mul = splitTier >= 2 ? 1.1f : 0.65f;
+                    cfg.bodyScale = mul;
+                    cfg.limbThickness = 0.14f * mul;
+                    cfg.headSize = 0.42f * mul;
+                    break;
+                case EnemyKind.Sniper:
+                    cfg.bodyScale = 0.95f;
+                    cfg.limbThickness = 0.12f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.2f, 0.25f, 0.4f);
+                    cfg.armLength = 0.65f;
+                    cfg.raiseRightArm = true;
+                    break;
+                case EnemyKind.Bomber:
+                    cfg.bodyScale = 1.05f;
+                    cfg.limbThickness = 0.18f;
+                    cfg.wideShoulders = true;
+                    cfg.headSize = 0.48f;
+                    cfg.bodyColor = new Color(0.95f, 0.65f, 0.2f);
+                    cfg.skinColor = new Color(0.9f, 0.6f, 0.2f);
+                    break;
             }
 
             StickmanBuilder.Build(root, cfg);
         }
 
+        /// <summary>Эллиптическая тень под персонажем.</summary>
+        private static void AddShadow(GameObject root)
+        {
+            var s = new GameObject("Shadow");
+            s.transform.SetParent(root.transform, false);
+            s.transform.localPosition = new Vector3(0f, -0.85f, 0f);
+            s.transform.localScale = new Vector3(0.85f, 0.22f, 1f);
+            var sr = s.AddComponent<SpriteRenderer>();
+            sr.sprite = SpriteFactory.SoftCircle();
+            sr.color = new Color(0f, 0f, 0f, 0.5f);
+            sr.sortingOrder = 1;
+        }
+
+        /// <summary>Визуальный щит у Shielder-а спереди (слева, т.к. он смотрит на героев).</summary>
+        private static void AddShielderShield(GameObject root, EnemyKind kind)
+        {
+            if (kind != EnemyKind.Shielder) return;
+            var sh = new GameObject("Shield");
+            sh.transform.SetParent(root.transform, false);
+            sh.transform.localPosition = new Vector3(-0.45f, 0f, 0f);
+            sh.transform.localScale = new Vector3(0.22f, 1.1f, 1f);
+            var sr = sh.AddComponent<SpriteRenderer>();
+            sr.sprite = SpriteFactory.White();
+            sr.color = new Color(0.3f, 0.35f, 0.4f);
+            sr.sortingOrder = 6;
+        }
+
         private static Color TeamColor(EnemyKind kind) => kind switch
         {
-            EnemyKind.Fighter => new Color(0.85f, 0.3f, 0.3f),
-            EnemyKind.Runner  => new Color(1f, 0.55f, 0.2f),
-            EnemyKind.Tank    => new Color(0.55f, 0.25f, 0.25f),
-            EnemyKind.Mage    => new Color(0.7f, 0.35f, 0.95f),
-            EnemyKind.Boss    => new Color(0.45f, 0.08f, 0.08f),
+            EnemyKind.Fighter  => new Color(0.85f, 0.3f, 0.3f),
+            EnemyKind.Runner   => new Color(1f, 0.55f, 0.2f),
+            EnemyKind.Tank     => new Color(0.55f, 0.25f, 0.25f),
+            EnemyKind.Mage     => new Color(0.7f, 0.35f, 0.95f),
+            EnemyKind.Boss     => new Color(0.45f, 0.08f, 0.08f),
+            EnemyKind.Healer   => new Color(0.85f, 0.95f, 0.85f),
+            EnemyKind.Shielder => new Color(0.55f, 0.55f, 0.7f),
+            EnemyKind.Splitter => new Color(0.95f, 0.45f, 0.6f),
+            EnemyKind.Sniper   => new Color(0.4f, 0.5f, 0.75f),
+            EnemyKind.Bomber   => new Color(0.95f, 0.65f, 0.2f),
             _ => Color.red,
         };
 
-        private static void ApplyStats(Enemy e, Health hp, EnemyKind kind, WaveConfig cfg)
+        private static void ApplyStats(Enemy e, Health hp, EnemyKind kind, WaveConfig cfg, int splitTier)
         {
             switch (kind)
             {
@@ -131,6 +222,57 @@ namespace StickEvolve.Wave
                     e.attackRate = 0.5f;
                     e.attackRange = 1.0f;
                     e.goldDrop = cfg.enemyGoldDrop * 25;
+                    break;
+                case EnemyKind.Healer:
+                    hp.Configure(6f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 1.3f;
+                    e.damage = 0f;
+                    e.attackRate = 0.9f;
+                    e.attackRange = 4.5f;
+                    e.bulletDamage = 1.8f * cfg.enemyDamageMultiplier; // = heal amount
+                    e.bulletSpeed = 7f;
+                    e.bulletColor = new Color(0.4f, 1f, 0.5f);
+                    e.goldDrop = cfg.enemyGoldDrop * 3;
+                    break;
+                case EnemyKind.Shielder:
+                    hp.Configure(14f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.9f;
+                    e.damage = 1.2f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.6f;
+                    e.attackRange = 0.7f;
+                    hp.damageReductionFlat = 0.6f;
+                    e.damageReductionFlat = 0.6f;
+                    e.goldDrop = cfg.enemyGoldDrop * 3;
+                    break;
+                case EnemyKind.Splitter:
+                    float tierMul = splitTier >= 2 ? 1f : 0.4f;
+                    hp.Configure(6f * tierMul * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 1.6f + (splitTier >= 2 ? 0f : 0.6f);
+                    e.damage = 0.9f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 1f;
+                    e.attackRange = 0.7f;
+                    e.goldDrop = splitTier >= 2 ? cfg.enemyGoldDrop * 2 : cfg.enemyGoldDrop;
+                    break;
+                case EnemyKind.Sniper:
+                    hp.Configure(3.5f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.7f;
+                    e.damage = 0f;
+                    e.attackRate = 0.35f;
+                    e.attackRange = 1f;
+                    e.bulletDamage = 2.8f * cfg.enemyDamageMultiplier;
+                    e.bulletSpeed = 11f;
+                    e.bulletColor = new Color(0.6f, 0.7f, 1f);
+                    e.goldDrop = cfg.enemyGoldDrop * 3;
+                    break;
+                case EnemyKind.Bomber:
+                    hp.Configure(5f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 2.2f;
+                    e.damage = 3.5f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 1f;
+                    e.attackRange = 0.7f;
+                    e.bulletExplosionRadius = 1.6f;
+                    e.selfDestructOnAttack = true;
+                    e.goldDrop = cfg.enemyGoldDrop * 2;
                     break;
             }
         }

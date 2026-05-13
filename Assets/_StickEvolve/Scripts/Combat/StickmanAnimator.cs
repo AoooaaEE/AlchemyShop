@@ -24,12 +24,22 @@ namespace StickEvolve.Combat
         public float bobAmp = 0.04f;
         public float blendSpeed = 6f;
 
+        [Tooltip("Базовый угол поднятой правой руки (если keepRightArmRaised).")]
+        public float raisedArmAngle = 75f;
+
         private Vector3 _lastPos;
         private float _phase;
         private float _moveBlend;
         private float _torsoBaseY;
+        private float _shootKick;     // 0..1, краткосрочный импульс отдачи
 
         public void SetTorsoBaseY(float y) => _torsoBaseY = y;
+
+        /// <summary>Триггер анимации отдачи. Поднятая рука дёргается назад.</summary>
+        public void TriggerShoot()
+        {
+            _shootKick = 1f;
+        }
 
         private void Awake()
         {
@@ -59,6 +69,13 @@ namespace StickEvolve.Combat
             if (armL != null) armL.localRotation = Quaternion.Euler(0f, 0f, -armAng);
             if (armR != null && !keepRightArmRaised)
                 armR.localRotation = Quaternion.Euler(0f, 0f, armAng);
+            else if (armR != null && keepRightArmRaised)
+            {
+                // Базовый угол поднятой руки + отдача (на короткое время рука дёргается вверх).
+                _shootKick = Mathf.MoveTowards(_shootKick, 0f, dt * 6f);
+                float kickOffset = _shootKick * 30f;
+                armR.localRotation = Quaternion.Euler(0f, 0f, raisedArmAngle + kickOffset);
+            }
 
             if (torso != null)
             {
