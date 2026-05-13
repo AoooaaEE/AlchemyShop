@@ -165,18 +165,18 @@ namespace StickEvolve.Bootstrap
                 var w = new WaveConfig
                 {
                     waveNumber = i,
-                    spawnInterval = Mathf.Max(0.25f, 0.8f - i * 0.05f),
+                    spawnInterval = Mathf.Max(0.35f, 0.9f - i * 0.03f),
                     postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.35f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.20f,
+                    enemyHpMultiplier = 1f + (i - 1) * 0.15f,
+                    enemyDamageMultiplier = 1f + (i - 1) * 0.10f,
                     enemyGoldDrop = 1 + i / 2,
                     enemies = new List<WaveEnemy>()
                 };
-                // Состав волны: больше типов с ростом номера
-                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 4 + i });
-                if (i >= 2) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner, count = 2 + i / 2 });
-                if (i >= 3) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 1 + i / 3 });
-                if (i >= 4) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage, count = 1 + i / 4 });
+                // Постепенный ввод типов.
+                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 3 + i / 2 });
+                if (i >= 2) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner, count = 1 + (i - 1) / 3 });
+                if (i >= 3) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 1 + (i - 3) / 4 });
+                if (i >= 4) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage, count = 1 + (i - 4) / 5 });
                 if (i % 5 == 0) w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
                 waves.Add(w);
             }

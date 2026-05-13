@@ -91,44 +91,44 @@ namespace StickEvolve.Wave
             switch (kind)
             {
                 case EnemyKind.Fighter:
-                    hp.Configure(6f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 1.6f;
+                    hp.Configure(5f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 1.4f;
                     e.damage = 1f * cfg.enemyDamageMultiplier;
-                    e.attackRate = 1f;
+                    e.attackRate = 0.8f;
                     e.attackRange = 0.7f;
                     e.goldDrop = cfg.enemyGoldDrop;
                     break;
                 case EnemyKind.Runner:
-                    hp.Configure(3f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 3.0f;
-                    e.damage = 0.7f * cfg.enemyDamageMultiplier;
-                    e.attackRate = 1.5f;
+                    hp.Configure(2.5f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 2.6f;
+                    e.damage = 0.6f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 1.2f;
                     e.attackRange = 0.6f;
                     e.goldDrop = cfg.enemyGoldDrop;
                     break;
                 case EnemyKind.Tank:
-                    hp.Configure(20f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 0.9f;
-                    e.damage = 2f * cfg.enemyDamageMultiplier;
-                    e.attackRate = 0.6f;
+                    hp.Configure(16f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.8f;
+                    e.damage = 1.8f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.5f;
                     e.attackRange = 0.8f;
                     e.goldDrop = cfg.enemyGoldDrop * 3;
                     break;
                 case EnemyKind.Mage:
-                    hp.Configure(5f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 1.1f;
+                    hp.Configure(4f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 1.0f;
                     e.damage = 0f;
-                    e.attackRate = 0.7f;
+                    e.attackRate = 0.6f;
                     e.attackRange = 0.7f;
-                    e.bulletDamage = 1.5f * cfg.enemyDamageMultiplier;
+                    e.bulletDamage = 1.0f * cfg.enemyDamageMultiplier;
                     e.bulletSpeed = 6f;
                     e.goldDrop = cfg.enemyGoldDrop * 2;
                     break;
                 case EnemyKind.Boss:
-                    hp.Configure(80f * cfg.enemyHpMultiplier);
-                    e.moveSpeed = 0.7f;
-                    e.damage = 4f * cfg.enemyDamageMultiplier;
-                    e.attackRate = 0.5f;
+                    hp.Configure(70f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.6f;
+                    e.damage = 3.5f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.45f;
                     e.attackRange = 1.0f;
                     e.goldDrop = cfg.enemyGoldDrop * 25;
                     break;
