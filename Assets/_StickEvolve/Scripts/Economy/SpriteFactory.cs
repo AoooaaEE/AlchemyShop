@@ -124,6 +124,8 @@ namespace StickEvolve.Economy
         private static Sprite _sun;
         private static Sprite _star;
         private static Sprite _pineTree;
+        private static Sprite _spark;
+        private static Sprite _cardBurst;
 
         /// <summary>Солнце с короной: ярко-белая середина → жёлтое ядро → мягкий ореол. Используется как фоновый диск.</summary>
         public static Sprite Sun(int size = 128)
@@ -226,6 +228,59 @@ namespace StickEvolve.Economy
             _pineTree = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0f), size);
             _pineTree.name = "SE_PineTree";
             return _pineTree;
+        }
+
+        /// <summary>Блестящая ромб-звезда для редких карт, магии и HUD.</summary>
+        public static Sprite Spark(int size = 48)
+        {
+            if (_spark != null) return _spark;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color[size * size];
+            float r = size * 0.5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = Mathf.Abs(x - r + 0.5f) / r;
+                float dy = Mathf.Abs(y - r + 0.5f) / r;
+                float diamond = Mathf.Clamp01(1f - (dx + dy));
+                float cross = Mathf.Max(Mathf.Clamp01(1f - dx * 6f) * Mathf.Clamp01(1f - dy * 1.5f),
+                                        Mathf.Clamp01(1f - dy * 6f) * Mathf.Clamp01(1f - dx * 1.5f));
+                float a = Mathf.Max(diamond * diamond, cross * cross * 0.85f);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            _spark = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            _spark.name = "SE_Spark";
+            return _spark;
+        }
+
+        /// <summary>Лучистая эмблема для центральных иконок карт.</summary>
+        public static Sprite CardBurst(int size = 96)
+        {
+            if (_cardBurst != null) return _cardBurst;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            tex.filterMode = FilterMode.Bilinear;
+            var px = new Color[size * size];
+            float r = size * 0.5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float nx = (x - r + 0.5f) / r;
+                float ny = (y - r + 0.5f) / r;
+                float d = Mathf.Sqrt(nx * nx + ny * ny);
+                float angle = Mathf.Atan2(ny, nx);
+                float rays = 0.55f + 0.45f * Mathf.Cos(angle * 12f);
+                float a = Mathf.Clamp01(1f - d) * rays;
+                a = Mathf.Pow(a, 1.35f);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            _cardBurst = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), size);
+            _cardBurst.name = "SE_CardBurst";
+            return _cardBurst;
         }
     }
 }
