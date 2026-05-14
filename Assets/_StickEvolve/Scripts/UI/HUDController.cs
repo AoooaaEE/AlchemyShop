@@ -1,6 +1,7 @@
 using System;
 using StickEvolve.Combat;
 using StickEvolve.Core;
+using StickEvolve.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -58,7 +59,7 @@ namespace StickEvolve.UI
             bgRT.offsetMin = Vector2.zero;
             bgRT.offsetMax = Vector2.zero;
             var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0f, 0f, 0f, 0.45f);
+            bgImg.color = new Color(0.04f, 0.05f, 0.08f, 0.62f);
             bgImg.raycastTarget = false;
 
             _goldText = MakeText("Gold", "GOLD: 0", 36, TextAlignmentOptions.Left);
@@ -69,6 +70,7 @@ namespace StickEvolve.UI
             goldRT.anchoredPosition = new Vector2(40f, 0f);
             goldRT.sizeDelta = new Vector2(400f, 60f);
             _goldText.color = new Color(1f, 0.85f, 0.2f);
+            AddHudIcon("GoldCoin", new Vector2(20f, 0f), new Vector2(34f, 34f), SpriteFactory.Circle(), new Color(1f, 0.75f, 0.15f), new Vector2(0f, 0.5f));
 
             _waveText = MakeText("Wave", "WAVE 1", 36, TextAlignmentOptions.Center);
             var waveRT = _waveText.rectTransform;
@@ -78,6 +80,8 @@ namespace StickEvolve.UI
             waveRT.anchoredPosition = new Vector2(0f, 14f);
             waveRT.sizeDelta = new Vector2(400f, 50f);
             _waveText.color = Color.white;
+            AddHudIcon("WaveSparkL", new Vector2(-170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f), new Vector2(0.5f, 0.5f));
+            AddHudIcon("WaveSparkR", new Vector2(170f, 0f), new Vector2(32f, 32f), SpriteFactory.Spark(), new Color(0.65f, 0.85f, 1f, 0.85f), new Vector2(0.5f, 0.5f));
 
             _actText = MakeText("Act", "АКТ 1 · волна 1/10", 22, TextAlignmentOptions.Center);
             var actRT = _actText.rectTransform;
@@ -101,7 +105,7 @@ namespace StickEvolve.UI
             hpFR.anchoredPosition = new Vector2(-40f, 0f);
             hpFR.sizeDelta = new Vector2(280f, 32f);
             var frameImg = hpFrame.AddComponent<Image>();
-            frameImg.color = new Color(0.2f, 0.2f, 0.25f, 1f);
+            frameImg.color = new Color(0.12f, 0.13f, 0.16f, 1f);
             frameImg.raycastTarget = false;
 
             var fillGO = new GameObject("HPFill");
@@ -126,6 +130,22 @@ namespace StickEvolve.UI
             hpTRT.offsetMin = Vector2.zero;
             hpTRT.offsetMax = Vector2.zero;
             _hpText.color = Color.white;
+        }
+
+        private void AddHudIcon(string name, Vector2 pos, Vector2 size, Sprite sprite, Color color, Vector2 anchor)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = anchor;
+            rt.anchorMax = anchor;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            var img = go.AddComponent<Image>();
+            img.sprite = sprite;
+            img.color = color;
+            img.raycastTarget = false;
         }
 
         private TextMeshProUGUI MakeText(string label, string text, float size, TextAlignmentOptions align)
@@ -177,7 +197,7 @@ namespace StickEvolve.UI
 
         private void HookEvents()
         {
-            if (_game == null) return;
+            if (_game == null || _game.Economy == null) return;
             _game.Economy.OnGoldChanged += OnGoldChanged;
             _game.OnWaveNumberChanged += OnWaveChanged;
         }
@@ -185,7 +205,8 @@ namespace StickEvolve.UI
         private void OnDestroy()
         {
             if (_game == null) return;
-            _game.Economy.OnGoldChanged -= OnGoldChanged;
+            if (_game.Economy != null)
+                _game.Economy.OnGoldChanged -= OnGoldChanged;
             _game.OnWaveNumberChanged -= OnWaveChanged;
         }
 
@@ -211,7 +232,7 @@ namespace StickEvolve.UI
 
         private void RefreshAll()
         {
-            if (_game == null) return;
+            if (_game == null || _game.Economy == null) return;
             OnGoldChanged(_game.Economy.Gold);
             OnWaveChanged(_game.CurrentWaveNumber);
         }

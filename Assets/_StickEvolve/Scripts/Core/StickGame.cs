@@ -150,6 +150,7 @@ namespace StickEvolve.Core
 
         public void PersistSave()
         {
+            if (_save == null || Economy == null) return;
             _save.gold = Economy.Gold;
             _save.highestWaveCompleted = HighestWaveCompleted;
             _save.highestActReached = HighestActReached;
