@@ -25,17 +25,21 @@ namespace StickEvolve.Levels
             public Button button;
             public Image icon;
             public Image glow;
+            public Image rim;
+            public Image starA;
+            public Image starB;
+            public Image starC;
             public TextMeshProUGUI numText;
             public TextMeshProUGUI nameText;
+            public TextMeshProUGUI lockText;
         }
 
-        // Zigzag x-positions for 20 levels (normalized 0..1 within safe area)
         private static readonly float[] NodeXNorm =
         {
-            0.22f, 0.72f, 0.30f, 0.65f, 0.18f,
-            0.75f, 0.35f, 0.68f, 0.25f, 0.50f,
-            0.70f, 0.25f, 0.60f, 0.20f, 0.72f,
-            0.35f, 0.65f, 0.28f, 0.58f, 0.45f,
+            0.20f, 0.68f, 0.35f, 0.73f, 0.26f,
+            0.62f, 0.30f, 0.76f, 0.43f, 0.58f,
+            0.72f, 0.28f, 0.63f, 0.22f, 0.70f,
+            0.34f, 0.74f, 0.31f, 0.60f, 0.45f,
         };
 
         private static readonly string[] ForestNames =
@@ -55,12 +59,12 @@ namespace StickEvolve.Levels
         };
 
         private const float MapW = 1080f;
-        private const float SafeMargin = 80f;
-        private const float NodeSpacingY = 300f;
-        private const float BiomeGap = 420f;
-        private const float PadTop = 200f;
-        private const float PadBot = 160f;
-        private const float NodeRadius = 55f;
+        private const float SafeMargin = 96f;
+        private const float NodeSpacingY = 330f;
+        private const float BiomeGap = 500f;
+        private const float PadTop = 260f;
+        private const float PadBot = 240f;
+        private const float NodeRadius = 62f;
 
         public static LevelMapUI Create(Canvas canvas)
         {
@@ -107,9 +111,8 @@ namespace StickEvolve.Levels
 
         private void Build()
         {
-            // Parchment background
             var bg = _root.AddComponent<Image>();
-            bg.color = new Color(0.82f, 0.74f, 0.60f);
+            bg.color = new Color(0.36f, 0.25f, 0.15f);
 
             // Scroll view
             var scrollGO = new GameObject("Scroll");
@@ -135,51 +138,105 @@ namespace StickEvolve.Levels
             _scroll.elasticity = 0.08f;
             _scroll.decelerationRate = 0.10f;
 
-            // --- Layer 1: biome zone backgrounds ---
+            DrawParchmentBackdrop();
             DrawBiomeZones();
 
-            // --- Layer 2: terrain decorations (all raycastTarget=false) ---
             DrawForestTerrain();
             DrawIceTerrain();
             DrawBiomeBorder();
 
-            // --- Layer 3: paths between nodes ---
             DrawPaths();
 
-            // --- Layer 4: level nodes (on top, clickable) ---
             DrawNodes();
+            DrawStartCallout();
         }
 
-        // ───────── Biome zone fills ─────────
+        private void DrawParchmentBackdrop()
+        {
+            float total = TotalH();
+
+            var paper = Img("ParchmentSheet", _contentRT);
+            paper.rt.anchoredPosition = new Vector2(0, total * 0.5f);
+            paper.rt.sizeDelta = new Vector2(MapW * 1.24f, total + 80f);
+            paper.img.color = new Color(0.70f, 0.58f, 0.38f);
+            paper.img.raycastTarget = false;
+
+            var inner = Img("ParchmentInner", _contentRT);
+            inner.rt.anchoredPosition = new Vector2(0, total * 0.5f);
+            inner.rt.sizeDelta = new Vector2(MapW * 1.02f, total - 70f);
+            inner.img.color = new Color(0.83f, 0.72f, 0.50f, 0.72f);
+            inner.img.raycastTarget = false;
+
+            DrawFrameLine("FrameL", new Vector2(-MapW * 0.51f, total * 0.5f), new Vector2(12f, total - 100f), 0f);
+            DrawFrameLine("FrameR", new Vector2(MapW * 0.51f, total * 0.5f), new Vector2(12f, total - 100f), 0f);
+            DrawFrameLine("FrameT", new Vector2(0, total - 70f), new Vector2(MapW * 1.02f, 12f), 0f);
+            DrawFrameLine("FrameB", new Vector2(0, 70f), new Vector2(MapW * 1.02f, 12f), 0f);
+
+            var rng = new System.Random(7);
+            for (int i = 0; i < 55; i++)
+            {
+                var stain = SprImg("PaperStain", _contentRT, SpriteFactory.SoftCircle());
+                stain.rt.anchoredPosition = new Vector2(Rng(rng, -MapW * 0.48f, MapW * 0.48f), Rng(rng, 100f, total - 100f));
+                float s = Rng(rng, 30f, 125f);
+                stain.rt.sizeDelta = new Vector2(s * Rng(rng, 0.9f, 1.8f), s * Rng(rng, 0.45f, 0.9f));
+                stain.img.color = new Color(0.42f, 0.25f, 0.10f, Rng(rng, 0.035f, 0.085f));
+                stain.img.raycastTarget = false;
+            }
+
+            for (int i = 0; i < 38; i++)
+            {
+                var fleck = SprImg("InkFleck", _contentRT, SpriteFactory.Circle());
+                fleck.rt.anchoredPosition = new Vector2(Rng(rng, -MapW * 0.50f, MapW * 0.50f), Rng(rng, 85f, total - 85f));
+                float s = Rng(rng, 3f, 8f);
+                fleck.rt.sizeDelta = new Vector2(s, s);
+                fleck.img.color = new Color(0.22f, 0.15f, 0.08f, Rng(rng, 0.08f, 0.17f));
+                fleck.img.raycastTarget = false;
+            }
+        }
+
+        private void DrawFrameLine(string name, Vector2 pos, Vector2 size, float rot)
+        {
+            var line = Img(name, _contentRT);
+            line.rt.anchoredPosition = pos;
+            line.rt.sizeDelta = size;
+            line.rt.localRotation = Quaternion.Euler(0, 0, rot);
+            line.img.color = new Color(0.33f, 0.20f, 0.10f, 0.48f);
+            line.img.raycastTarget = false;
+        }
 
         private void DrawBiomeZones()
         {
             float total = TotalH();
             float forestBot = NodePos(LevelCatalog.LevelsPerBiome - 1).y - NodeSpacingY * 0.5f;
 
-            // Forest fill
             var f = Img("ForestZone", _contentRT);
             f.rt.anchoredPosition = new Vector2(0, (total + forestBot) * 0.5f);
             f.rt.sizeDelta = new Vector2(MapW * 1.2f, total - forestBot);
-            f.img.color = new Color(0.52f, 0.68f, 0.38f, 0.30f);
+            f.img.color = new Color(0.42f, 0.65f, 0.28f, 0.42f);
             f.img.raycastTarget = false;
 
-            // Ice fill
             float iceTop = forestBot;
             var ic = Img("IceZone", _contentRT);
             ic.rt.anchoredPosition = new Vector2(0, iceTop * 0.5f);
             ic.rt.sizeDelta = new Vector2(MapW * 1.2f, iceTop);
-            ic.img.color = new Color(0.72f, 0.82f, 0.94f, 0.35f);
+            ic.img.color = new Color(0.62f, 0.78f, 0.96f, 0.43f);
             ic.img.raycastTarget = false;
 
-            // Zone titles
-            Label("ЗЕЛЁНЫЙ ЛЕС", 44, new Color(0.18f, 0.38f, 0.10f, 0.50f),
-                new Vector2(0, total - 80f));
-            Label("ЛЕДЯНОЙ КРАЙ", 44, new Color(0.15f, 0.30f, 0.55f, 0.50f),
-                new Vector2(0, NodePos(LevelCatalog.LevelsPerBiome).y + NodeSpacingY * 0.7f));
-        }
+            var forestShade = SprImg("ForestCanopyShade", _contentRT, SpriteFactory.SoftCircle());
+            forestShade.rt.anchoredPosition = new Vector2(-MapW * 0.24f, total - 520f);
+            forestShade.rt.sizeDelta = new Vector2(900f, 680f);
+            forestShade.img.color = new Color(0.10f, 0.35f, 0.12f, 0.16f);
+            forestShade.img.raycastTarget = false;
 
-        // ───────── Forest decorations ─────────
+            var iceShade = SprImg("IceMistShade", _contentRT, SpriteFactory.SoftCircle());
+            iceShade.rt.anchoredPosition = new Vector2(MapW * 0.20f, iceTop * 0.44f);
+            iceShade.rt.sizeDelta = new Vector2(880f, 760f);
+            iceShade.img.color = new Color(0.68f, 0.90f, 1f, 0.22f);
+            iceShade.img.raycastTarget = false;
+
+            BannerLabel("ЗЕЛЁНЫЙ ЛЕС", new Vector2(0, total - 105f), new Color(0.18f, 0.42f, 0.12f), new Color(0.74f, 0.86f, 0.44f, 0.78f));
+            BannerLabel("ЛЕДЯНОЙ КРАЙ", new Vector2(0, NodePos(LevelCatalog.LevelsPerBiome).y + NodeSpacingY * 0.72f), new Color(0.15f, 0.34f, 0.62f), new Color(0.72f, 0.88f, 1f, 0.80f));
+        }
 
         private void DrawForestTerrain()
         {
@@ -188,19 +245,27 @@ namespace StickEvolve.Levels
             float yTop = total - PadTop + NodeSpacingY * 0.3f;
             float yBot = NodePos(LevelCatalog.LevelsPerBiome - 1).y - NodeSpacingY * 0.4f;
 
-            // Scattered pine trees
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 16; i++)
+            {
+                float side = i % 2 == 0 ? -1 : 1;
+                var canopy = SprImg("ForestCanopy", _contentRT, SpriteFactory.SoftCircle());
+                canopy.rt.anchoredPosition = new Vector2(side * Rng(rng, MapW * 0.30f, MapW * 0.53f), Rng(rng, yBot, yTop));
+                canopy.rt.sizeDelta = new Vector2(Rng(rng, 190f, 330f), Rng(rng, 120f, 220f));
+                canopy.img.color = new Color(0.12f, Rng(rng, 0.35f, 0.52f), 0.14f, Rng(rng, 0.20f, 0.35f));
+                canopy.img.raycastTarget = false;
+            }
+
+            for (int i = 0; i < 68; i++)
             {
                 float x = Rng(rng, -MapW * 0.48f, MapW * 0.48f);
                 float y = Rng(rng, yBot, yTop);
                 if (TooCloseToNode(x, y, 0, LevelCatalog.LevelsPerBiome, 110f)) continue;
 
-                float s = Rng(rng, 50f, 90f);
+                float s = Rng(rng, 44f, 92f);
                 DrawPineTree(x, y, s, rng);
             }
 
-            // Bushes / grass clusters
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 36; i++)
             {
                 float x = Rng(rng, -MapW * 0.45f, MapW * 0.45f);
                 float y = Rng(rng, yBot, yTop);
@@ -215,7 +280,6 @@ namespace StickEvolve.Levels
                 bush.img.raycastTarget = false;
             }
 
-            // Gentle hills along edges
             for (int i = 0; i < 6; i++)
             {
                 float side = i % 2 == 0 ? -1 : 1;
@@ -228,7 +292,6 @@ namespace StickEvolve.Levels
                 hill.img.raycastTarget = false;
             }
 
-            // Small river
             float rx = MapW * 0.12f;
             var p2 = NodePos(2);
             var p6 = NodePos(6);
@@ -240,38 +303,80 @@ namespace StickEvolve.Levels
                 var seg = Img("River", _contentRT);
                 seg.rt.anchoredPosition = new Vector2(x, y);
                 float segH = (p2.y - p6.y + 130f) / 14f + 8f;
-                seg.rt.sizeDelta = new Vector2(14f, segH);
+                seg.rt.sizeDelta = new Vector2(28f, segH);
                 seg.rt.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI * 3.5f) * 18f);
-                seg.img.color = new Color(0.28f, 0.52f, 0.72f, 0.45f);
+                seg.img.color = new Color(0.18f, 0.48f, 0.72f, 0.50f);
                 seg.img.raycastTarget = false;
+
+                var glint = Img("RiverGlint", _contentRT);
+                glint.rt.anchoredPosition = new Vector2(x + 6f, y);
+                glint.rt.sizeDelta = new Vector2(5f, segH * 0.70f);
+                glint.rt.localRotation = seg.rt.localRotation;
+                glint.img.color = new Color(0.78f, 0.95f, 1f, 0.35f);
+                glint.img.raycastTarget = false;
+            }
+
+            DrawBridge(rx + 15f, Mathf.Lerp(p2.y + 80f, p6.y - 50f, 0.47f), -12f);
+
+            for (int i = 0; i < 44; i++)
+            {
+                float x = Rng(rng, -MapW * 0.47f, MapW * 0.47f);
+                float y = Rng(rng, yBot, yTop);
+                if (TooCloseToNode(x, y, 0, LevelCatalog.LevelsPerBiome, 70f)) continue;
+
+                var pebble = SprImg("ForestPebble", _contentRT, SpriteFactory.Circle());
+                float s = Rng(rng, 6f, 13f);
+                pebble.rt.anchoredPosition = new Vector2(x, y);
+                pebble.rt.sizeDelta = new Vector2(s * Rng(rng, 1f, 1.8f), s);
+                pebble.img.color = new Color(0.28f, 0.23f, 0.16f, Rng(rng, 0.20f, 0.35f));
+                pebble.img.raycastTarget = false;
             }
         }
 
         private void DrawPineTree(float x, float y, float size, System.Random rng)
         {
-            // Trunk
-            var trunk = Img("Trunk", _contentRT);
-            trunk.rt.anchoredPosition = new Vector2(x, y - size * 0.1f);
+            var root = new GameObject("PineTree");
+            root.transform.SetParent(_contentRT, false);
+            var rootRT = root.AddComponent<RectTransform>();
+            rootRT.anchorMin = new Vector2(0.5f, 0);
+            rootRT.anchorMax = new Vector2(0.5f, 0);
+            rootRT.pivot = new Vector2(0.5f, 0.5f);
+            rootRT.anchoredPosition = new Vector2(x, y);
+            rootRT.sizeDelta = Vector2.zero;
+            rootRT.localScale = new Vector3(1f, 0.92f, 1f);
+
+            var shadow = SprImg("TreeShadow", _contentRT, SpriteFactory.SoftCircle());
+            shadow.rt.anchoredPosition = new Vector2(x, y - size * 0.04f);
+            shadow.rt.sizeDelta = new Vector2(size * 0.65f, size * 0.26f);
+            shadow.img.color = new Color(0.04f, 0.06f, 0.02f, 0.18f);
+            shadow.img.raycastTarget = false;
+
+            var trunk = Img("Trunk", rootRT);
+            trunk.rt.anchoredPosition = new Vector2(0, -size * 0.1f);
             trunk.rt.sizeDelta = new Vector2(size * 0.12f, size * 0.30f);
             trunk.img.color = new Color(0.42f, 0.30f, 0.18f, 0.70f);
             trunk.img.raycastTarget = false;
 
-            // 3 layers of foliage using triangles
             for (int t = 0; t < 3; t++)
             {
                 float layerY = y + size * (0.10f + t * 0.22f);
                 float layerW = size * (0.55f - t * 0.12f);
                 float layerH = size * 0.38f;
-                var leaf = SprImg("Leaf", _contentRT, SpriteFactory.Triangle());
-                leaf.rt.anchoredPosition = new Vector2(x, layerY);
+
+                var outline = SprImg("LeafShade", rootRT, SpriteFactory.Triangle());
+                outline.rt.anchoredPosition = new Vector2(0, layerY - y - 2f);
+                outline.rt.sizeDelta = new Vector2(layerW * 1.16f, layerH * 1.12f);
+                outline.img.color = new Color(0.05f, 0.16f, 0.06f, 0.36f);
+                outline.img.raycastTarget = false;
+
+                var leaf = SprImg("Leaf", rootRT, SpriteFactory.Triangle());
+                leaf.rt.anchoredPosition = new Vector2(0, layerY - y);
                 leaf.rt.sizeDelta = new Vector2(layerW, layerH);
-                float green = 0.35f + t * 0.08f + (float)rng.NextDouble() * 0.12f;
-                leaf.img.color = new Color(0.15f, green, 0.10f, 0.75f);
+                float green = 0.36f + t * 0.08f + (float)rng.NextDouble() * 0.10f;
+                leaf.img.color = new Color(0.12f, green, 0.10f, 0.86f);
                 leaf.img.raycastTarget = false;
             }
         }
-
-        // ───────── Ice decorations ─────────
 
         private void DrawIceTerrain()
         {
@@ -279,8 +384,7 @@ namespace StickEvolve.Levels
             float yTop = NodePos(LevelCatalog.LevelsPerBiome).y + NodeSpacingY * 0.3f;
             float yBot = NodePos(LevelCatalog.TotalLevels - 1).y - NodeSpacingY * 0.4f;
 
-            // Snow-capped mountains
-            for (int i = 0; i < 14; i++)
+            for (int i = 0; i < 18; i++)
             {
                 float x = Rng(rng, -MapW * 0.48f, MapW * 0.48f);
                 float y = Rng(rng, yBot, yTop);
@@ -292,8 +396,7 @@ namespace StickEvolve.Levels
                 DrawMountain(x, y, mW, mH, rng);
             }
 
-            // Frozen trees (blue-white pines)
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 38; i++)
             {
                 float x = Rng(rng, -MapW * 0.46f, MapW * 0.46f);
                 float y = Rng(rng, yBot, yTop);
@@ -304,8 +407,7 @@ namespace StickEvolve.Levels
                 DrawIceTree(x, y, s, rng);
             }
 
-            // Snowflake particles
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 70; i++)
             {
                 float x = Rng(rng, -MapW * 0.48f, MapW * 0.48f);
                 float y = Rng(rng, yBot, yTop);
@@ -317,8 +419,7 @@ namespace StickEvolve.Levels
                 snow.img.raycastTarget = false;
             }
 
-            // Ice patches on ground
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 18; i++)
             {
                 float x = Rng(rng, -MapW * 0.40f, MapW * 0.40f);
                 float y = Rng(rng, yBot, yTop);
@@ -328,12 +429,35 @@ namespace StickEvolve.Levels
                 patch.img.color = new Color(0.78f, 0.88f, 0.98f, 0.20f);
                 patch.img.raycastTarget = false;
             }
+
+            for (int i = 0; i < 14; i++)
+            {
+                float x = Rng(rng, -MapW * 0.46f, MapW * 0.46f);
+                float y = Rng(rng, yBot, yTop);
+                DrawIceShard(x, y, Rng(rng, 32f, 68f), rng);
+            }
         }
 
         private void DrawIceTree(float x, float y, float size, System.Random rng)
         {
-            var trunk = Img("Trunk", _contentRT);
-            trunk.rt.anchoredPosition = new Vector2(x, y - size * 0.1f);
+            var root = new GameObject("IceTree");
+            root.transform.SetParent(_contentRT, false);
+            var rootRT = root.AddComponent<RectTransform>();
+            rootRT.anchorMin = new Vector2(0.5f, 0);
+            rootRT.anchorMax = new Vector2(0.5f, 0);
+            rootRT.pivot = new Vector2(0.5f, 0.5f);
+            rootRT.anchoredPosition = new Vector2(x, y);
+            rootRT.sizeDelta = Vector2.zero;
+            rootRT.localScale = new Vector3(1f, 0.92f, 1f);
+
+            var shadow = SprImg("IceTreeShadow", _contentRT, SpriteFactory.SoftCircle());
+            shadow.rt.anchoredPosition = new Vector2(x, y - size * 0.02f);
+            shadow.rt.sizeDelta = new Vector2(size * 0.60f, size * 0.20f);
+            shadow.img.color = new Color(0.20f, 0.30f, 0.42f, 0.16f);
+            shadow.img.raycastTarget = false;
+
+            var trunk = Img("Trunk", rootRT);
+            trunk.rt.anchoredPosition = new Vector2(0, -size * 0.1f);
             trunk.rt.sizeDelta = new Vector2(size * 0.10f, size * 0.25f);
             trunk.img.color = new Color(0.50f, 0.48f, 0.45f, 0.55f);
             trunk.img.raycastTarget = false;
@@ -343,8 +467,8 @@ namespace StickEvolve.Levels
                 float layerY = y + size * (0.08f + t * 0.20f);
                 float layerW = size * (0.48f - t * 0.10f);
                 float layerH = size * 0.35f;
-                var leaf = SprImg("IceLeaf", _contentRT, SpriteFactory.Triangle());
-                leaf.rt.anchoredPosition = new Vector2(x, layerY);
+                var leaf = SprImg("IceLeaf", rootRT, SpriteFactory.Triangle());
+                leaf.rt.anchoredPosition = new Vector2(0, layerY - y);
                 leaf.rt.sizeDelta = new Vector2(layerW, layerH);
                 float blue = 0.65f + t * 0.08f;
                 leaf.img.color = new Color(0.55f, 0.68f + t * 0.05f, blue, 0.65f);
@@ -354,14 +478,18 @@ namespace StickEvolve.Levels
 
         private void DrawMountain(float x, float y, float w, float h, System.Random rng)
         {
-            // Main peak (triangle)
+            var shade = SprImg("PeakShade", _contentRT, SpriteFactory.Triangle());
+            shade.rt.anchoredPosition = new Vector2(x + w * 0.08f, y - h * 0.05f);
+            shade.rt.sizeDelta = new Vector2(w * 1.15f, h * 1.08f);
+            shade.img.color = new Color(0.20f, 0.22f, 0.30f, 0.22f);
+            shade.img.raycastTarget = false;
+
             var peak = SprImg("Peak", _contentRT, SpriteFactory.Triangle());
             peak.rt.anchoredPosition = new Vector2(x, y);
             peak.rt.sizeDelta = new Vector2(w, h);
             peak.img.color = new Color(0.48f, 0.52f, 0.60f, 0.55f);
             peak.img.raycastTarget = false;
 
-            // Snow cap on top
             var cap = SprImg("SnowCap", _contentRT, SpriteFactory.SoftCircle());
             cap.rt.anchoredPosition = new Vector2(x, y + h * 0.65f);
             cap.rt.sizeDelta = new Vector2(w * 0.40f, h * 0.25f);
@@ -369,7 +497,15 @@ namespace StickEvolve.Levels
             cap.img.raycastTarget = false;
         }
 
-        // ───────── Biome border ─────────
+        private void DrawIceShard(float x, float y, float size, System.Random rng)
+        {
+            var shard = SprImg("IceShard", _contentRT, SpriteFactory.Triangle());
+            shard.rt.anchoredPosition = new Vector2(x, y);
+            shard.rt.sizeDelta = new Vector2(size * 0.36f, size);
+            shard.rt.localRotation = Quaternion.Euler(0, 0, Rng(rng, -16f, 16f));
+            shard.img.color = new Color(0.75f, 0.93f, 1f, 0.35f);
+            shard.img.raycastTarget = false;
+        }
 
         private void DrawBiomeBorder()
         {
@@ -377,18 +513,22 @@ namespace StickEvolve.Levels
             float iceTopY = NodePos(LevelCatalog.LevelsPerBiome).y;
             float midY = (forestBotY + iceTopY) * 0.5f;
 
-            // Horizontal decorative border line
+            var mist = SprImg("BiomeMist", _contentRT, SpriteFactory.SoftCircle());
+            mist.rt.anchoredPosition = new Vector2(0, midY);
+            mist.rt.sizeDelta = new Vector2(MapW * 1.05f, 260f);
+            mist.img.color = new Color(0.80f, 0.88f, 0.86f, 0.20f);
+            mist.img.raycastTarget = false;
+
             var border = Img("BiomeBorder", _contentRT);
-            border.rt.anchoredPosition = new Vector2(0, midY);
-            border.rt.sizeDelta = new Vector2(MapW * 0.85f, 4f);
-            border.img.color = new Color(0.45f, 0.42f, 0.38f, 0.40f);
+            border.rt.anchoredPosition = new Vector2(0, midY - 6f);
+            border.rt.sizeDelta = new Vector2(MapW * 0.88f, 8f);
+            border.img.color = new Color(0.30f, 0.25f, 0.20f, 0.36f);
             border.img.raycastTarget = false;
 
-            // Mountain range at border
             var rng = new System.Random(77);
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 10; i++)
             {
-                float x = -MapW * 0.35f + i * MapW * 0.12f;
+                float x = -MapW * 0.42f + i * MapW * 0.095f;
                 float w = Rng(rng, 50f, 80f);
                 float h = Rng(rng, 50f, 90f);
                 var mtn = SprImg("BorderMtn", _contentRT, SpriteFactory.Triangle());
@@ -405,8 +545,6 @@ namespace StickEvolve.Levels
             }
         }
 
-        // ───────── Paths ─────────
-
         private void DrawPaths()
         {
             for (int i = 0; i < LevelCatalog.TotalLevels - 1; i++)
@@ -415,39 +553,72 @@ namespace StickEvolve.Levels
                 var p2 = NodePos(i + 1);
                 bool cross = (i == LevelCatalog.LevelsPerBiome - 1);
 
-                Color c;
+                Color shadow = new Color(0.16f, 0.10f, 0.05f, cross ? 0.33f : 0.42f);
+                Color road;
+                Color center;
                 if (cross)
-                    c = new Color(0.55f, 0.52f, 0.48f, 0.50f);
-                else if (i < LevelCatalog.LevelsPerBiome)
-                    c = new Color(0.60f, 0.45f, 0.28f, 0.60f);
-                else
-                    c = new Color(0.62f, 0.72f, 0.82f, 0.55f);
-
-                int segs = cross ? 10 : 6;
-                float w = cross ? 8f : 10f;
-
-                for (int s = 0; s < segs; s++)
                 {
-                    float t0 = s / (float)segs;
-                    float t1 = (s + 1f) / segs;
-                    float mx = Mathf.Lerp(p1.x, p2.x, (t0 + t1) * 0.5f);
-                    float my = Mathf.Lerp(p1.y, p2.y, (t0 + t1) * 0.5f);
-                    float dx = p2.x * t1 + p1.x * (1 - t1) - (p2.x * t0 + p1.x * (1 - t0));
-                    float dy = p2.y * t1 + p1.y * (1 - t1) - (p2.y * t0 + p1.y * (1 - t0));
-                    float len = Mathf.Sqrt(dx * dx + dy * dy);
-                    float angle = Mathf.Atan2(dx, dy) * Mathf.Rad2Deg;
-
-                    var seg = Img($"P{i}_{s}", _contentRT);
-                    seg.rt.anchoredPosition = new Vector2(mx, my);
-                    seg.rt.sizeDelta = new Vector2(w, len + 4f);
-                    seg.rt.localRotation = Quaternion.Euler(0, 0, -angle);
-                    seg.img.color = c;
-                    seg.img.raycastTarget = false;
+                    road = new Color(0.62f, 0.58f, 0.50f, 0.66f);
+                    center = new Color(0.86f, 0.82f, 0.72f, 0.36f);
                 }
+                else if (i < LevelCatalog.LevelsPerBiome)
+                {
+                    road = new Color(0.58f, 0.39f, 0.20f, 0.82f);
+                    center = new Color(0.90f, 0.72f, 0.42f, 0.38f);
+                }
+                else
+                {
+                    road = new Color(0.58f, 0.74f, 0.90f, 0.78f);
+                    center = new Color(0.94f, 0.98f, 1f, 0.50f);
+                }
+
+                DrawPathLayer(i, p1, p2, shadow, cross ? 24f : 30f, cross ? 10 : 7, "Shadow");
+                DrawPathLayer(i, p1, p2, road, cross ? 15f : 21f, cross ? 10 : 7, "Road");
+                DrawPathLayer(i, p1, p2, center, cross ? 5f : 7f, cross ? 10 : 7, "Center");
+                DrawRoadPebbles(i, p1, p2, i >= LevelCatalog.LevelsPerBiome);
             }
         }
 
-        // ───────── Level nodes ─────────
+        private void DrawPathLayer(int pathIndex, Vector2 p1, Vector2 p2, Color c, float w, int segs, string suffix)
+        {
+            for (int s = 0; s < segs; s++)
+            {
+                float t0 = s / (float)segs;
+                float t1 = (s + 1f) / segs;
+                float mx = Mathf.Lerp(p1.x, p2.x, (t0 + t1) * 0.5f);
+                float my = Mathf.Lerp(p1.y, p2.y, (t0 + t1) * 0.5f);
+                float dx = p2.x * t1 + p1.x * (1 - t1) - (p2.x * t0 + p1.x * (1 - t0));
+                float dy = p2.y * t1 + p1.y * (1 - t1) - (p2.y * t0 + p1.y * (1 - t0));
+                float len = Mathf.Sqrt(dx * dx + dy * dy);
+                float angle = Mathf.Atan2(dx, dy) * Mathf.Rad2Deg;
+
+                var seg = Img($"P{pathIndex}_{suffix}_{s}", _contentRT);
+                seg.rt.anchoredPosition = new Vector2(mx, my);
+                seg.rt.sizeDelta = new Vector2(w, len + 8f);
+                seg.rt.localRotation = Quaternion.Euler(0, 0, -angle);
+                seg.img.color = c;
+                seg.img.raycastTarget = false;
+            }
+        }
+
+        private void DrawRoadPebbles(int pathIndex, Vector2 p1, Vector2 p2, bool ice)
+        {
+            var rng = new System.Random(500 + pathIndex);
+            for (int s = 1; s <= 3; s++)
+            {
+                float t = s * 0.25f + Rng(rng, -0.05f, 0.05f);
+                var peb = SprImg("RoadPebble", _contentRT, SpriteFactory.Circle());
+                peb.rt.anchoredPosition = new Vector2(
+                    Mathf.Lerp(p1.x, p2.x, t) + Rng(rng, -16f, 16f),
+                    Mathf.Lerp(p1.y, p2.y, t) + Rng(rng, -16f, 16f));
+                float size = Rng(rng, 8f, 15f);
+                peb.rt.sizeDelta = new Vector2(size * Rng(rng, 1f, 1.6f), size);
+                peb.img.color = ice
+                    ? new Color(0.82f, 0.95f, 1f, 0.35f)
+                    : new Color(0.32f, 0.22f, 0.13f, 0.40f);
+                peb.img.raycastTarget = false;
+            }
+        }
 
         private void DrawNodes()
         {
@@ -467,24 +638,33 @@ namespace StickEvolve.Levels
         private void DrawOneNode(int lvl, Vector2 pos, string locName, bool ice)
         {
             Color accent = ice
-                ? new Color(0.40f, 0.65f, 0.92f)
-                : new Color(0.45f, 0.75f, 0.30f);
+                ? new Color(0.34f, 0.66f, 0.96f)
+                : new Color(0.50f, 0.76f, 0.26f);
 
-            // Glow behind node
+            var shadow = SprImg($"NodeShadow_{lvl}", _contentRT, SpriteFactory.SoftCircle());
+            shadow.rt.anchoredPosition = pos + new Vector2(8f, -11f);
+            shadow.rt.sizeDelta = new Vector2(NodeRadius * 2.75f, NodeRadius * 2.25f);
+            shadow.img.color = new Color(0.05f, 0.035f, 0.02f, 0.32f);
+            shadow.img.raycastTarget = false;
+
             var glow = SprImg($"Glow_{lvl}", _contentRT, SpriteFactory.SoftCircle());
             glow.rt.anchoredPosition = pos;
-            glow.rt.sizeDelta = new Vector2(NodeRadius * 3.2f, NodeRadius * 3.2f);
-            glow.img.color = new Color(accent.r, accent.g, accent.b, 0.25f);
+            glow.rt.sizeDelta = new Vector2(NodeRadius * 3.5f, NodeRadius * 3.5f);
+            glow.img.color = new Color(accent.r, accent.g, accent.b, 0.24f);
             glow.img.raycastTarget = false;
 
-            // Dark circle outline
             var outline = SprImg($"Outline_{lvl}", _contentRT, SpriteFactory.Circle());
             outline.rt.anchoredPosition = pos;
-            outline.rt.sizeDelta = new Vector2(NodeRadius * 2f + 12f, NodeRadius * 2f + 12f);
-            outline.img.color = new Color(0.20f, 0.18f, 0.15f, 0.80f);
+            outline.rt.sizeDelta = new Vector2(NodeRadius * 2f + 20f, NodeRadius * 2f + 20f);
+            outline.img.color = ice ? new Color(0.15f, 0.22f, 0.32f, 0.90f) : new Color(0.24f, 0.15f, 0.08f, 0.92f);
             outline.img.raycastTarget = false;
 
-            // Main circle button
+            var rim = SprImg($"Rim_{lvl}", _contentRT, SpriteFactory.Circle());
+            rim.rt.anchoredPosition = pos;
+            rim.rt.sizeDelta = new Vector2(NodeRadius * 2f + 10f, NodeRadius * 2f + 10f);
+            rim.img.color = ice ? new Color(0.72f, 0.88f, 1f, 0.82f) : new Color(0.96f, 0.72f, 0.30f, 0.86f);
+            rim.img.raycastTarget = false;
+
             var nodeGO = new GameObject($"Level_{lvl}");
             nodeGO.transform.SetParent(_contentRT, false);
             var nodeRT = nodeGO.AddComponent<RectTransform>();
@@ -509,7 +689,14 @@ namespace StickEvolve.Levels
             int captured = lvl;
             btn.onClick.AddListener(() => OnLevelClicked(captured));
 
-            // Number text
+            var highlight = SprImg("NodeHighlight", nodeRT, SpriteFactory.SoftCircle());
+            highlight.rt.anchorMin = new Vector2(0.18f, 0.56f);
+            highlight.rt.anchorMax = new Vector2(0.68f, 1.00f);
+            highlight.rt.offsetMin = Vector2.zero;
+            highlight.rt.offsetMax = Vector2.zero;
+            highlight.img.color = new Color(1f, 1f, 1f, ice ? 0.24f : 0.18f);
+            highlight.img.raycastTarget = false;
+
             var numGO = new GameObject("Num");
             numGO.transform.SetParent(nodeGO.transform, false);
             var numRT = numGO.AddComponent<RectTransform>();
@@ -519,13 +706,27 @@ namespace StickEvolve.Levels
             numRT.offsetMax = Vector2.zero;
             var numTmp = numGO.AddComponent<TextMeshProUGUI>();
             numTmp.text = lvl.ToString();
-            numTmp.fontSize = 40;
+            numTmp.fontSize = 42;
             numTmp.fontStyle = FontStyles.Bold;
             numTmp.alignment = TextAlignmentOptions.Center;
             numTmp.color = Color.white;
             numTmp.raycastTarget = false;
 
-            // Location name below
+            var lockGO = new GameObject("Lock");
+            lockGO.transform.SetParent(nodeGO.transform, false);
+            var lockRT = lockGO.AddComponent<RectTransform>();
+            lockRT.anchorMin = Vector2.zero;
+            lockRT.anchorMax = Vector2.one;
+            lockRT.offsetMin = Vector2.zero;
+            lockRT.offsetMax = Vector2.zero;
+            var lockTmp = lockGO.AddComponent<TextMeshProUGUI>();
+            lockTmp.text = "✕";
+            lockTmp.fontSize = 34;
+            lockTmp.fontStyle = FontStyles.Bold;
+            lockTmp.alignment = TextAlignmentOptions.Center;
+            lockTmp.color = new Color(0.62f, 0.58f, 0.52f, 0.75f);
+            lockTmp.raycastTarget = false;
+
             var nameGO = new GameObject("Name");
             nameGO.transform.SetParent(_contentRT, false);
             var nameRT = nameGO.AddComponent<RectTransform>();
@@ -533,14 +734,18 @@ namespace StickEvolve.Levels
             nameRT.anchorMax = new Vector2(0.5f, 0);
             nameRT.pivot = new Vector2(0.5f, 1f);
             nameRT.anchoredPosition = new Vector2(pos.x, pos.y - NodeRadius - 8f);
-            nameRT.sizeDelta = new Vector2(280f, 36f);
+            nameRT.sizeDelta = new Vector2(300f, 42f);
             var nameTmp = nameGO.AddComponent<TextMeshProUGUI>();
             nameTmp.text = locName;
-            nameTmp.fontSize = 24;
-            nameTmp.fontStyle = FontStyles.Italic;
+            nameTmp.fontSize = 25;
+            nameTmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
             nameTmp.alignment = TextAlignmentOptions.Center;
             nameTmp.color = new Color(0.28f, 0.22f, 0.15f, 0.80f);
             nameTmp.raycastTarget = false;
+
+            var starA = DrawNodeStar(pos + new Vector2(-39f, NodeRadius + 22f), lvl, "A");
+            var starB = DrawNodeStar(pos + new Vector2(0f, NodeRadius + 33f), lvl, "B");
+            var starC = DrawNodeStar(pos + new Vector2(39f, NodeRadius + 22f), lvl, "C");
 
             _nodes.Add(new LevelNode
             {
@@ -548,9 +753,64 @@ namespace StickEvolve.Levels
                 button = btn,
                 icon = nodeImg,
                 glow = glow.img,
+                rim = rim.img,
+                starA = starA.img,
+                starB = starB.img,
+                starC = starC.img,
                 numText = numTmp,
                 nameText = nameTmp,
+                lockText = lockTmp,
             });
+        }
+
+        private R DrawNodeStar(Vector2 pos, int lvl, string suffix)
+        {
+            var star = SprImg($"NodeStar_{lvl}_{suffix}", _contentRT, SpriteFactory.Star());
+            star.rt.anchoredPosition = pos;
+            star.rt.sizeDelta = new Vector2(30f, 30f);
+            star.img.color = new Color(1f, 0.88f, 0.25f, 0.0f);
+            star.img.raycastTarget = false;
+            return star;
+        }
+
+        private void DrawStartCallout()
+        {
+            var p = NodePos(0);
+            Vector2 pos = p + new Vector2(145f, -126f);
+
+            var shadow = Img("StartCalloutShadow", _contentRT);
+            shadow.rt.anchoredPosition = pos + new Vector2(5f, -7f);
+            shadow.rt.sizeDelta = new Vector2(275f, 78f);
+            shadow.img.color = new Color(0.08f, 0.05f, 0.025f, 0.25f);
+            shadow.img.raycastTarget = false;
+
+            var bubble = Img("StartCallout", _contentRT);
+            bubble.rt.anchoredPosition = pos;
+            bubble.rt.sizeDelta = new Vector2(275f, 78f);
+            bubble.img.color = new Color(0.96f, 0.90f, 0.72f, 0.94f);
+            bubble.img.raycastTarget = false;
+
+            var point = SprImg("StartCalloutPoint", _contentRT, SpriteFactory.Triangle());
+            point.rt.anchoredPosition = pos + new Vector2(-88f, 50f);
+            point.rt.sizeDelta = new Vector2(44f, 50f);
+            point.img.color = bubble.img.color;
+            point.img.raycastTarget = false;
+
+            var go = new GameObject("StartCalloutText");
+            go.transform.SetParent(_contentRT, false);
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0);
+            rt.anchorMax = new Vector2(0.5f, 0);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(260f, 66f);
+            var tmp = go.AddComponent<TextMeshProUGUI>();
+            tmp.text = "НАЧНИТЕ ЗДЕСЬ!";
+            tmp.fontSize = 28;
+            tmp.fontStyle = FontStyles.Bold | FontStyles.Italic;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = new Color(0.16f, 0.13f, 0.10f, 0.92f);
+            tmp.raycastTarget = false;
         }
 
         // ───────── Public API ─────────
@@ -576,6 +836,7 @@ namespace StickEvolve.Levels
             for (int i = 0; i < _nodes.Count; i++)
             {
                 var n = _nodes[i];
+                n.button.transform.localScale = Vector3.one;
                 bool done = n.level < _highestUnlocked;
                 bool current = n.level == _highestUnlocked;
                 bool locked = n.level > _highestUnlocked;
@@ -586,27 +847,42 @@ namespace StickEvolve.Levels
                 {
                     n.icon.color = new Color(0.30f, 0.80f, 0.35f);
                     n.glow.color = new Color(0.30f, 0.80f, 0.35f, 0.20f);
+                    n.rim.color = new Color(1f, 0.88f, 0.35f, 0.86f);
+                    n.starA.color = new Color(1f, 0.88f, 0.25f, 0.95f);
+                    n.starB.color = new Color(1f, 0.88f, 0.25f, 0.95f);
+                    n.starC.color = new Color(1f, 0.88f, 0.25f, 0.95f);
                     n.numText.text = "\u2714";
                     n.numText.fontSize = 44;
                     n.numText.color = Color.white;
+                    n.lockText.gameObject.SetActive(false);
                     n.nameText.color = new Color(0.22f, 0.42f, 0.22f, 0.65f);
                 }
                 else if (current)
                 {
                     n.icon.color = new Color(1f, 0.82f, 0.18f);
                     n.glow.color = new Color(1f, 0.82f, 0.18f, 0.35f);
+                    n.rim.color = new Color(1f, 0.94f, 0.40f, 0.96f);
+                    n.starA.color = new Color(1f, 0.88f, 0.25f, 0.40f);
+                    n.starB.color = new Color(1f, 0.88f, 0.25f, 0.40f);
+                    n.starC.color = new Color(1f, 0.88f, 0.25f, 0.40f);
                     n.numText.text = n.level.ToString();
                     n.numText.fontSize = 40;
                     n.numText.color = Color.white;
+                    n.lockText.gameObject.SetActive(false);
                     n.nameText.color = new Color(0.28f, 0.22f, 0.15f, 0.90f);
                 }
                 else
                 {
-                    n.icon.color = new Color(0.42f, 0.40f, 0.38f);
+                    n.icon.color = new Color(0.22f, 0.20f, 0.19f);
                     n.glow.color = new Color(0.42f, 0.40f, 0.38f, 0.10f);
+                    n.rim.color = new Color(0.12f, 0.11f, 0.10f, 0.70f);
+                    n.starA.color = new Color(0.40f, 0.38f, 0.34f, 0.0f);
+                    n.starB.color = new Color(0.40f, 0.38f, 0.34f, 0.0f);
+                    n.starC.color = new Color(0.40f, 0.38f, 0.34f, 0.0f);
                     n.numText.text = n.level.ToString();
                     n.numText.fontSize = 40;
-                    n.numText.color = new Color(0.65f, 0.62f, 0.58f);
+                    n.numText.color = new Color(0.56f, 0.52f, 0.47f);
+                    n.lockText.gameObject.SetActive(true);
                     n.nameText.color = new Color(0.40f, 0.38f, 0.35f, 0.40f);
                 }
             }
@@ -624,12 +900,18 @@ namespace StickEvolve.Levels
             if (!_root.activeSelf) return;
             for (int i = 0; i < _nodes.Count; i++)
             {
+                _nodes[i].button.transform.localScale = Vector3.one;
+            }
+
+            for (int i = 0; i < _nodes.Count; i++)
+            {
                 var n = _nodes[i];
                 if (n.level != _highestUnlocked) continue;
 
                 float t = Time.unscaledTime;
                 float pulse = 0.78f + 0.22f * Mathf.Sin(t * 3.2f);
                 n.icon.color = new Color(pulse, 0.82f * pulse, 0.18f * pulse);
+                n.rim.color = new Color(1f, 0.95f * pulse, 0.36f, 0.92f);
 
                 float gp = 0.25f + 0.15f * Mathf.Sin(t * 2.5f);
                 n.glow.color = new Color(1f, 0.82f, 0.18f, gp);
@@ -639,8 +921,6 @@ namespace StickEvolve.Levels
                 break;
             }
         }
-
-        // ───────── Helpers ─────────
 
         private struct R { public RectTransform rt; public Image img; }
 
@@ -681,6 +961,43 @@ namespace StickEvolve.Levels
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = c;
             tmp.raycastTarget = false;
+        }
+
+        private void BannerLabel(string text, Vector2 pos, Color textColor, Color bannerColor)
+        {
+            var shadow = Img("BannerShadow", _contentRT);
+            shadow.rt.anchoredPosition = pos + new Vector2(6f, -7f);
+            shadow.rt.sizeDelta = new Vector2(500f, 70f);
+            shadow.img.color = new Color(0.08f, 0.05f, 0.025f, 0.24f);
+            shadow.img.raycastTarget = false;
+
+            var banner = Img("Banner", _contentRT);
+            banner.rt.anchoredPosition = pos;
+            banner.rt.sizeDelta = new Vector2(500f, 70f);
+            banner.img.color = bannerColor;
+            banner.img.raycastTarget = false;
+
+            Label(text, 42, textColor, pos + new Vector2(0, 1f));
+        }
+
+        private void DrawBridge(float x, float y, float rot)
+        {
+            var basePlank = Img("BridgeBase", _contentRT);
+            basePlank.rt.anchoredPosition = new Vector2(x, y);
+            basePlank.rt.sizeDelta = new Vector2(102f, 32f);
+            basePlank.rt.localRotation = Quaternion.Euler(0, 0, rot);
+            basePlank.img.color = new Color(0.38f, 0.24f, 0.12f, 0.78f);
+            basePlank.img.raycastTarget = false;
+
+            for (int i = -2; i <= 2; i++)
+            {
+                var plank = Img("BridgePlank", _contentRT);
+                plank.rt.anchoredPosition = new Vector2(x + i * 20f, y);
+                plank.rt.sizeDelta = new Vector2(12f, 42f);
+                plank.rt.localRotation = Quaternion.Euler(0, 0, rot);
+                plank.img.color = new Color(0.60f, 0.42f, 0.22f, 0.85f);
+                plank.img.raycastTarget = false;
+            }
         }
 
         private static void Stretch(GameObject go)
