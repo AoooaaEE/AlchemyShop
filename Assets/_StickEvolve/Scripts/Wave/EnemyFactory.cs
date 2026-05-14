@@ -57,12 +57,16 @@ namespace StickEvolve.Wave
             var cfg = StickmanConfig.Default(color);
             // Глаза у врагов — красные, чтобы они визуально отличались от героев.
             cfg.eyeColor = new Color(0.95f, 0.15f, 0.15f);
+            cfg.accentColor = new Color(0.15f, 0.04f, 0.04f);
+            cfg.weaponColor = new Color(0.58f, 0.56f, 0.52f);
 
             switch (kind)
             {
                 case EnemyKind.Fighter:
                     cfg.bodyScale = 1f;
                     cfg.limbThickness = 0.15f;
+                    cfg.weapon = StickmanWeapon.Sword;
+                    cfg.accentColor = new Color(0.38f, 0.05f, 0.05f);
                     break;
                 case EnemyKind.Runner:
                     cfg.bodyScale = 1.05f;
@@ -71,6 +75,9 @@ namespace StickEvolve.Wave
                     cfg.armLength = 0.6f;
                     cfg.torsoHeight = 0.55f;
                     cfg.headSize = 0.36f;
+                    cfg.weapon = StickmanWeapon.Dagger;
+                    cfg.hasMask = true;
+                    cfg.accentColor = new Color(0.30f, 0.08f, 0.02f);
                     break;
                 case EnemyKind.Tank:
                     cfg.bodyScale = 1.15f;
@@ -80,6 +87,9 @@ namespace StickEvolve.Wave
                     cfg.torsoHeight = 0.7f;
                     cfg.legLength = 0.5f;
                     cfg.handSize = 0.16f;
+                    cfg.weapon = StickmanWeapon.Shield;
+                    cfg.hasShoulderPads = true;
+                    cfg.accentColor = new Color(0.32f, 0.20f, 0.15f);
                     break;
                 case EnemyKind.Mage:
                     cfg.bodyScale = 1f;
@@ -89,6 +99,10 @@ namespace StickEvolve.Wave
                     cfg.headSize = 0.44f;
                     cfg.hasCape = true;
                     cfg.capeColor = new Color(0.35f, 0.10f, 0.5f);
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.accentColor = new Color(0.95f, 0.22f, 0.95f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.70f, 0.10f, 0.95f, 0.18f);
                     break;
                 case EnemyKind.Boss:
                     cfg.bodyScale = 1.7f;
@@ -104,6 +118,12 @@ namespace StickEvolve.Wave
                     cfg.capeColor = new Color(0.30f, 0.05f, 0.05f);
                     cfg.handSize = 0.18f;
                     cfg.eyeColor = new Color(1f, 0.5f, 0f);
+                    cfg.weapon = StickmanWeapon.Axe;
+                    cfg.hasShoulderPads = true;
+                    cfg.hasCrown = true;
+                    cfg.accentColor = new Color(1f, 0.58f, 0.05f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.9f, 0.05f, 0.02f, 0.20f);
                     break;
                 case EnemyKind.Healer:
                     cfg.bodyScale = 0.95f;
@@ -114,6 +134,11 @@ namespace StickEvolve.Wave
                     cfg.hasCape = true;
                     cfg.capeColor = new Color(0.85f, 0.90f, 0.80f);
                     cfg.eyeColor = new Color(0.35f, 0.85f, 0.45f);
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.weaponColor = new Color(0.65f, 0.55f, 0.35f);
+                    cfg.accentColor = new Color(0.55f, 1f, 0.55f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.40f, 1f, 0.55f, 0.17f);
                     break;
                 case EnemyKind.Shielder:
                     cfg.bodyScale = 1.1f;
@@ -123,12 +148,18 @@ namespace StickEvolve.Wave
                     cfg.torsoHeight = 0.7f;
                     cfg.hasHat = true;
                     cfg.hatColor = new Color(0.35f, 0.40f, 0.50f);
+                    cfg.weapon = StickmanWeapon.Shield;
+                    cfg.accentColor = new Color(0.70f, 0.74f, 0.86f);
+                    cfg.hasShoulderPads = true;
                     break;
                 case EnemyKind.Splitter:
                     float mul = splitTier >= 2 ? 1.1f : 0.65f;
                     cfg.bodyScale = mul;
                     cfg.limbThickness = 0.14f * mul;
                     cfg.headSize = 0.42f * mul;
+                    cfg.weapon = splitTier >= 2 ? StickmanWeapon.Sword : StickmanWeapon.Dagger;
+                    cfg.hasMask = splitTier < 2;
+                    cfg.accentColor = new Color(0.95f, 0.25f, 0.45f);
                     break;
                 case EnemyKind.Sniper:
                     cfg.bodyScale = 0.95f;
@@ -137,6 +168,9 @@ namespace StickEvolve.Wave
                     cfg.hatColor = new Color(0.2f, 0.25f, 0.4f);
                     cfg.armLength = 0.65f;
                     cfg.raiseRightArm = true;
+                    cfg.weapon = StickmanWeapon.Rifle;
+                    cfg.weaponColor = new Color(0.12f, 0.14f, 0.16f);
+                    cfg.accentColor = new Color(0.40f, 0.55f, 0.92f);
                     break;
                 case EnemyKind.Bomber:
                     cfg.bodyScale = 1.05f;
@@ -145,8 +179,62 @@ namespace StickEvolve.Wave
                     cfg.headSize = 0.48f;
                     cfg.bodyColor = new Color(0.95f, 0.65f, 0.2f);
                     cfg.skinColor = new Color(0.9f, 0.6f, 0.2f);
-                    cfg.eyeColor = new Color(1f, 0.95f, 0f); // ядовито-жёлтые глаза
+                    cfg.eyeColor = new Color(1f, 0.95f, 0f);
                     cfg.handSize = 0.14f;
+                    cfg.weapon = StickmanWeapon.Bomb;
+                    cfg.weaponColor = new Color(0.06f, 0.06f, 0.07f);
+                    cfg.accentColor = new Color(1f, 0.85f, 0.20f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(1f, 0.55f, 0.05f, 0.16f);
+                    break;
+                case EnemyKind.IceFighter:
+                    cfg.bodyScale = 1f;
+                    cfg.limbThickness = 0.15f;
+                    cfg.eyeColor = new Color(0.4f, 0.8f, 1f);
+                    break;
+                case EnemyKind.IceRunner:
+                    cfg.bodyScale = 1.05f;
+                    cfg.limbThickness = 0.11f;
+                    cfg.legLength = 0.65f;
+                    cfg.armLength = 0.6f;
+                    cfg.torsoHeight = 0.55f;
+                    cfg.headSize = 0.36f;
+                    cfg.eyeColor = new Color(0.5f, 0.9f, 1f);
+                    break;
+                case EnemyKind.IceTank:
+                    cfg.bodyScale = 1.15f;
+                    cfg.limbThickness = 0.22f;
+                    cfg.wideShoulders = true;
+                    cfg.headSize = 0.48f;
+                    cfg.torsoHeight = 0.7f;
+                    cfg.legLength = 0.5f;
+                    cfg.handSize = 0.16f;
+                    cfg.eyeColor = new Color(0.3f, 0.6f, 0.9f);
+                    break;
+                case EnemyKind.IceMage:
+                    cfg.bodyScale = 1f;
+                    cfg.limbThickness = 0.14f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.25f, 0.45f, 0.75f);
+                    cfg.headSize = 0.44f;
+                    cfg.hasCape = true;
+                    cfg.capeColor = new Color(0.20f, 0.40f, 0.70f);
+                    cfg.eyeColor = new Color(0.4f, 0.7f, 1f);
+                    break;
+                case EnemyKind.IceBoss:
+                    cfg.bodyScale = 1.7f;
+                    cfg.limbThickness = 0.22f;
+                    cfg.wideShoulders = true;
+                    cfg.headSize = 0.55f;
+                    cfg.torsoHeight = 0.8f;
+                    cfg.legLength = 0.6f;
+                    cfg.armLength = 0.7f;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.10f, 0.20f, 0.45f);
+                    cfg.hasCape = true;
+                    cfg.capeColor = new Color(0.15f, 0.25f, 0.50f);
+                    cfg.handSize = 0.18f;
+                    cfg.eyeColor = new Color(0.5f, 0.85f, 1f);
                     break;
             }
 
@@ -191,7 +279,12 @@ namespace StickEvolve.Wave
             EnemyKind.Shielder => new Color(0.55f, 0.55f, 0.7f),
             EnemyKind.Splitter => new Color(0.95f, 0.45f, 0.6f),
             EnemyKind.Sniper   => new Color(0.4f, 0.5f, 0.75f),
-            EnemyKind.Bomber   => new Color(0.95f, 0.65f, 0.2f),
+            EnemyKind.Bomber     => new Color(0.95f, 0.65f, 0.2f),
+            EnemyKind.IceFighter => new Color(0.55f, 0.75f, 0.95f),
+            EnemyKind.IceRunner  => new Color(0.65f, 0.85f, 1.0f),
+            EnemyKind.IceTank    => new Color(0.35f, 0.50f, 0.70f),
+            EnemyKind.IceMage    => new Color(0.45f, 0.60f, 0.95f),
+            EnemyKind.IceBoss    => new Color(0.20f, 0.35f, 0.60f),
             _ => Color.red,
         };
 
@@ -291,6 +384,49 @@ namespace StickEvolve.Wave
                     e.bulletExplosionRadius = 1.6f;
                     e.selfDestructOnAttack = true;
                     e.goldDrop = cfg.enemyGoldDrop * 2;
+                    break;
+                case EnemyKind.IceFighter:
+                    hp.Configure(6f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 1.3f;
+                    e.damage = 1.2f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.75f;
+                    e.attackRange = 0.7f;
+                    e.goldDrop = cfg.enemyGoldDrop;
+                    break;
+                case EnemyKind.IceRunner:
+                    hp.Configure(3f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 2.8f;
+                    e.damage = 0.8f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 1.3f;
+                    e.attackRange = 0.6f;
+                    e.goldDrop = cfg.enemyGoldDrop;
+                    break;
+                case EnemyKind.IceTank:
+                    hp.Configure(20f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.7f;
+                    e.damage = 2.0f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.45f;
+                    e.attackRange = 0.8f;
+                    e.goldDrop = cfg.enemyGoldDrop * 3;
+                    break;
+                case EnemyKind.IceMage:
+                    hp.Configure(5f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.9f;
+                    e.damage = 0f;
+                    e.attackRate = 0.55f;
+                    e.attackRange = 0.7f;
+                    e.bulletDamage = 1.3f * cfg.enemyDamageMultiplier;
+                    e.bulletSpeed = 7f;
+                    e.bulletColor = new Color(0.4f, 0.7f, 1f);
+                    e.goldDrop = cfg.enemyGoldDrop * 2;
+                    break;
+                case EnemyKind.IceBoss:
+                    hp.Configure(120f * cfg.enemyHpMultiplier);
+                    e.moveSpeed = 0.55f;
+                    e.damage = 4.5f * cfg.enemyDamageMultiplier;
+                    e.attackRate = 0.45f;
+                    e.attackRange = 1.0f;
+                    e.goldDrop = cfg.enemyGoldDrop * 30;
                     break;
             }
         }

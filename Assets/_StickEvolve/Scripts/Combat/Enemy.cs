@@ -16,6 +16,11 @@ namespace StickEvolve.Combat
         Splitter,
         Sniper,
         Bomber,
+        IceFighter,
+        IceRunner,
+        IceTank,
+        IceMage,
+        IceBoss,
     }
 
     /// <summary>
@@ -103,9 +108,10 @@ namespace StickEvolve.Combat
         {
             switch (kind)
             {
-                case EnemyKind.Mage:   return attackRange + 4f;
-                case EnemyKind.Sniper: return attackRange + 7f;
-                default:               return attackRange;
+                case EnemyKind.Mage:    return attackRange + 4f;
+                case EnemyKind.IceMage: return attackRange + 4.5f;
+                case EnemyKind.Sniper:  return attackRange + 7f;
+                default:                return attackRange;
             }
         }
 
@@ -156,6 +162,7 @@ namespace StickEvolve.Combat
             switch (kind)
             {
                 case EnemyKind.Mage:
+                case EnemyKind.IceMage:
                 case EnemyKind.Sniper:
                 {
                     Vector2 dir = (_target.transform.position - transform.position).normalized;

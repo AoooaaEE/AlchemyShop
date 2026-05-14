@@ -4,6 +4,7 @@ using StickEvolve.Cards;
 using StickEvolve.Combat;
 using StickEvolve.Core;
 using StickEvolve.Economy;
+using StickEvolve.Levels;
 using StickEvolve.UI;
 using StickEvolve.Wave;
 using UnityEngine;
@@ -26,8 +27,10 @@ namespace StickEvolve.Bootstrap
         private HUDController _hud;
         private CardChoiceUI _cardUI;
         private GameOverUI _gameOverUI;
+        private LevelMapUI _levelMap;
         private Camera _cam;
         private Canvas _canvas;
+        private readonly List<GameObject> _backgroundObjects = new();
 
         private readonly List<Hero> _heroes = new();
         private float _heroSpacing = 1.5f;
@@ -52,20 +55,20 @@ namespace StickEvolve.Bootstrap
         {
             BuildCamera();
             ComputePlayfieldBounds();
-            BuildBackground();
+            BuildBackground(BiomeTheme.Plains());
             BuildCanvas();
             BuildGameManager();
             BuildSpawner();
             BuildHUD();
             BuildCardUI();
             BuildGameOverUI();
+            BuildLevelMap();
 
             CardEffect.ExtraHeroSpawner = SpawnExtraHero;
             CardEffect.ExtraHeroSpawnerByClass = SpawnExtraHeroOfClass;
             Hero.CloneSpawnerFunc = SpawnHeroClone;
 
-            SpawnInitialHero();
-            BeginGame();
+            ShowLevelMap();
         }
 
         private void BuildCamera()
@@ -98,59 +101,62 @@ namespace StickEvolve.Bootstrap
             _enemyX = halfWidth + 1f;
         }
 
-        private void BuildBackground()
+        private void ClearBackground()
         {
-            // Камера тоже подкрасим, чтобы за границами sprite-неба тон совпадал.
-            if (_cam != null) _cam.backgroundColor = new Color(0.55f, 0.80f, 0.98f);
+            for (int i = _backgroundObjects.Count - 1; i >= 0; i--)
+                if (_backgroundObjects[i] != null) Destroy(_backgroundObjects[i]);
+            _backgroundObjects.Clear();
+        }
 
-            // — Небо: широкий градиент из 5 слоёв (день, ярко-голубой → тёплый горизонт) —
-            var skyColors = new[]
-            {
-                new Color(0.30f, 0.55f, 0.90f),   // верх — насыщенный синий
-                new Color(0.45f, 0.70f, 0.95f),
-                new Color(0.62f, 0.82f, 0.98f),
-                new Color(0.80f, 0.92f, 1.00f),
-                new Color(0.95f, 0.96f, 0.90f),   // горизонт — лёгкая дымка
-            };
+        private GameObject BG(GameObject go)
+        {
+            _backgroundObjects.Add(go);
+            return go;
+        }
+
+        private void BuildBackground(BiomeTheme theme)
+        {
+            ClearBackground();
+
+            if (_cam != null) _cam.backgroundColor = theme.cameraBackground;
+
             float skyTop = 5.5f;
             float skyBottom = -1.0f;
-            float bandH = (skyTop - skyBottom) / skyColors.Length;
-            for (int i = 0; i < skyColors.Length; i++)
+            float bandH = (skyTop - skyBottom) / theme.skyGradient.Length;
+            for (int i = 0; i < theme.skyGradient.Length; i++)
             {
-                var band = new GameObject($"Sky_{i}");
+                var band = BG(new GameObject($"Sky_{i}"));
                 var sr = band.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.White();
-                sr.color = skyColors[i];
+                sr.color = theme.skyGradient[i];
                 sr.sortingOrder = -60 + i;
                 band.transform.position = new Vector3(0f, skyTop - bandH * (i + 0.5f), 0f);
                 band.transform.localScale = new Vector3(40f, bandH + 0.05f, 1f);
             }
 
-            // — Солнце в правой верхней четверти (с ореолом). Слегка покачивается за счёт ParallaxDrift скоростью 0. —
-            var sun = new GameObject("Sun");
+            var sun = BG(new GameObject("Sun"));
             var sunSR = sun.AddComponent<SpriteRenderer>();
             sunSR.sprite = SpriteFactory.Sun();
+            sunSR.color = theme.sunColor;
             sunSR.sortingOrder = -45;
             sun.transform.position = new Vector3(4.5f, 3.6f, 0f);
             sun.transform.localScale = Vector3.one * 2.4f;
 
-            // Внешний мягкий ореол вокруг солнца
-            var sunHalo = new GameObject("SunHalo");
+            var sunHalo = BG(new GameObject("SunHalo"));
             var haloSR = sunHalo.AddComponent<SpriteRenderer>();
             haloSR.sprite = SpriteFactory.SoftCircle();
-            haloSR.color = new Color(1f, 0.95f, 0.75f, 0.35f);
+            haloSR.color = theme.sunHaloColor;
             haloSR.sortingOrder = -46;
             sunHalo.transform.position = new Vector3(4.5f, 3.6f, 0f);
             sunHalo.transform.localScale = Vector3.one * 5.5f;
 
-            // — Облака (мягкие кружки), дрейфуют влево; разная высота и скорость —
             for (int i = 0; i < 6; i++)
             {
-                var c = new GameObject($"Cloud_{i}");
+                var c = BG(new GameObject($"Cloud_{i}"));
                 var sr = c.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.SoftCircle();
-                sr.color = new Color(1f, 1f, 1f, Random.Range(0.55f, 0.85f));
-                sr.sortingOrder = -30 - (i % 2); // часть впереди, часть позади
+                sr.color = new Color(theme.cloudColor.r, theme.cloudColor.g, theme.cloudColor.b, Random.Range(0.55f, 0.85f));
+                sr.sortingOrder = -30 - (i % 2);
                 c.transform.position = new Vector3(Random.Range(-9f, 9f), Random.Range(1.8f, 4.5f), 0f);
                 c.transform.localScale = new Vector3(Random.Range(2.5f, 4.2f), Random.Range(1.0f, 1.6f), 1f);
                 var drift = c.AddComponent<ParallaxDrift>();
@@ -159,86 +165,105 @@ namespace StickEvolve.Bootstrap
                 drift.wrapX = -12f;
             }
 
-            // — Дальние горы (голубоватые, нижний контур горизонта) —
             for (int i = 0; i < 7; i++)
             {
-                var m = new GameObject($"MountainFar_{i}");
+                var m = BG(new GameObject($"MountainFar_{i}"));
                 var sr = m.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.55f, 0.62f, 0.78f);
+                sr.color = theme.mountainFarColor;
                 sr.sortingOrder = -25;
                 m.transform.position = new Vector3(-10f + i * 3.0f + Random.Range(-0.4f, 0.4f), -1.6f, 0f);
                 m.transform.localScale = new Vector3(Random.Range(3.0f, 4.5f), Random.Range(1.8f, 2.4f), 1f);
             }
 
-            // — Ближние горы (более тёмный голубой) —
             for (int i = 0; i < 5; i++)
             {
-                var m = new GameObject($"MountainNear_{i}");
+                var m = BG(new GameObject($"MountainNear_{i}"));
                 var sr = m.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.38f, 0.46f, 0.62f);
+                sr.color = theme.mountainNearColor;
                 sr.sortingOrder = -23;
                 m.transform.position = new Vector3(-10f + i * 4.0f + Random.Range(-0.4f, 0.4f), -1.85f, 0f);
                 m.transform.localScale = new Vector3(Random.Range(4f, 6f), Random.Range(2.3f, 3.2f), 1f);
             }
 
-            // — Лес: ёлки за линией горизонта (дальний слой, средне-зелёные) —
             for (int i = 0; i < 14; i++)
             {
-                var t = new GameObject($"TreeFar_{i}");
+                var t = BG(new GameObject($"TreeFar_{i}"));
                 var sr = t.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.PineTree();
-                sr.color = new Color(0.22f, 0.42f, 0.28f);
+                sr.color = theme.treeFarColor;
                 sr.sortingOrder = -18;
                 t.transform.position = new Vector3(-10f + i * 1.45f + Random.Range(-0.3f, 0.3f), -1.55f, 0f);
                 float h = Random.Range(0.7f, 1.1f);
                 t.transform.localScale = new Vector3(h * 0.7f, h, 1f);
             }
 
-            // — Земля: основная полоса + верхний травяной слой —
-            var ground = new GameObject("Ground");
+            for (int i = 0; i < 9; i++)
+            {
+                var ruin = BG(new GameObject($"AncientRune_{i}"));
+                var sr = ruin.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.White();
+                sr.color = new Color(0.52f, 0.52f, 0.45f, 0.55f);
+                sr.sortingOrder = -16;
+                ruin.transform.position = new Vector3(-9f + i * 2.2f + Random.Range(-0.25f, 0.25f), -1.42f, 0f);
+                ruin.transform.localScale = new Vector3(Random.Range(0.10f, 0.18f), Random.Range(0.45f, 0.85f), 1f);
+                ruin.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(-8f, 8f));
+
+                var gem = new GameObject($"AncientRuneGem_{i}");
+                gem.transform.SetParent(ruin.transform, false);
+                gem.transform.localPosition = new Vector3(0f, 0.38f, -0.01f);
+                gem.transform.localScale = Vector3.one * 0.9f;
+                var gemSR = gem.AddComponent<SpriteRenderer>();
+                gemSR.sprite = SpriteFactory.Spark();
+                gemSR.color = new Color(0.35f, 0.90f, 1f, 0.55f);
+                gemSR.sortingOrder = -15;
+            }
+
+            var ground = BG(new GameObject("Ground"));
             var groundSR = ground.AddComponent<SpriteRenderer>();
             groundSR.sprite = SpriteFactory.White();
-            groundSR.color = new Color(0.42f, 0.30f, 0.18f);
+            groundSR.color = theme.groundColor;
             groundSR.sortingOrder = -10;
             ground.transform.position = new Vector3(0f, -3.5f, 0f);
             ground.transform.localScale = new Vector3(40f, 4.5f, 1f);
 
-            var grass = new GameObject("Grass");
+            var grass = BG(new GameObject("Grass"));
             var grassSR = grass.AddComponent<SpriteRenderer>();
             grassSR.sprite = SpriteFactory.White();
-            grassSR.color = new Color(0.42f, 0.66f, 0.28f);
+            grassSR.color = theme.grassColor;
             grassSR.sortingOrder = -9;
             grass.transform.position = new Vector3(0f, -1.45f, 0f);
             grass.transform.localScale = new Vector3(40f, 0.22f, 1f);
 
-            // — Кустики травы перед игроком —
+            for (int i = 0; i < 18; i++)
+            {
+                var pebble = BG(new GameObject($"Pebble_{i}"));
+                var sr = pebble.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.SoftCircle();
+                sr.color = new Color(0.28f, 0.24f, 0.20f, 0.45f);
+                sr.sortingOrder = -6;
+                pebble.transform.position = new Vector3(-10f + i * 1.2f + Random.Range(-0.45f, 0.45f), Random.Range(-3.25f, -1.70f), 0f);
+                pebble.transform.localScale = new Vector3(Random.Range(0.12f, 0.30f), Random.Range(0.05f, 0.12f), 1f);
+            }
+
             for (int i = 0; i < 22; i++)
             {
-                var t = new GameObject($"GrassTuft_{i}");
+                var t = BG(new GameObject($"GrassTuft_{i}"));
                 var sr = t.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Triangle();
-                sr.color = new Color(0.32f, 0.55f, 0.22f);
+                sr.color = theme.grassTuftColor;
                 sr.sortingOrder = -8;
                 t.transform.position = new Vector3(-10f + i * 1.0f + Random.Range(-0.3f, 0.3f), -1.40f, 0f);
                 t.transform.localScale = new Vector3(Random.Range(0.18f, 0.30f), Random.Range(0.18f, 0.35f), 1f);
             }
 
-            // — Цветочки (точки) на травянном слое —
-            var flowerColors = new[]
-            {
-                new Color(0.95f, 0.85f, 0.30f),  // жёлтый
-                new Color(0.95f, 0.45f, 0.55f),  // розовый
-                new Color(0.85f, 0.45f, 0.90f),  // фиолетовый
-                new Color(0.95f, 0.95f, 0.95f),  // белый
-            };
             for (int i = 0; i < 24; i++)
             {
-                var f = new GameObject($"Flower_{i}");
+                var f = BG(new GameObject($"Flower_{i}"));
                 var sr = f.AddComponent<SpriteRenderer>();
                 sr.sprite = SpriteFactory.Circle();
-                sr.color = flowerColors[Random.Range(0, flowerColors.Length)];
+                sr.color = theme.flowerColors[Random.Range(0, theme.flowerColors.Length)];
                 sr.sortingOrder = -7;
                 f.transform.position = new Vector3(-10f + i * 0.9f + Random.Range(-0.3f, 0.3f), -1.43f + Random.Range(-0.04f, 0.04f), 0f);
                 f.transform.localScale = Vector3.one * Random.Range(0.06f, 0.11f);
@@ -271,18 +296,75 @@ namespace StickEvolve.Bootstrap
             _game = gameGO.AddComponent<StickGame>();
         }
 
-        private void BuildSpawner()
+        private void BuildLevelMap()
         {
-            var spawnerGO = new GameObject("WaveSpawner");
-            _spawner = spawnerGO.AddComponent<WaveSpawner>();
+            _levelMap = LevelMapUI.Create(_canvas);
+            _levelMap.OnLevelSelected += StartLevel;
+        }
+
+        private void ShowLevelMap()
+        {
+            // Hide gameplay HUD elements while on map
+            if (_hud != null) _hud.gameObject.SetActive(false);
+            _levelMap.Show(_game.HighestLevelCompleted);
+        }
+
+        private void StartLevel(int levelNum)
+        {
+            _game.SetCurrentLevel(levelNum);
+
+            // Rebuild background for the level's biome
+            var theme = BiomeTheme.Get(LevelCatalog.GetBiome(levelNum));
+            BuildBackground(theme);
+
+            // Show HUD
+            if (_hud != null) _hud.gameObject.SetActive(true);
+
+            // Clean up any previous gameplay objects
+            CleanupGameplay();
+
+            // Build spawner with level-specific waves
+            BuildSpawnerForLevel(levelNum);
+
+            SpawnInitialHero();
+            BeginGame();
+        }
+
+        private void CleanupGameplay()
+        {
+            for (int i = _heroes.Count - 1; i >= 0; i--)
+                if (_heroes[i] != null) Destroy(_heroes[i].gameObject);
+            _heroes.Clear();
+
+            if (_spawner != null)
+            {
+                _spawner.ForceKillAll();
+                _spawner.StopCurrent();
+            }
+            EnemyRegistry.Instance.Clear();
+            HeroRegistry.Instance.Clear();
+        }
+
+        private void BuildSpawnerForLevel(int levelNum)
+        {
+            if (_spawner == null)
+            {
+                var spawnerGO = new GameObject("WaveSpawner");
+                _spawner = spawnerGO.AddComponent<WaveSpawner>();
+                _spawner.OnWaveStarted += (n) => _game.NotifyWaveStarted(n);
+                _spawner.OnWaveCompleted += OnWaveCompleted;
+                _spawner.OnAllWavesCompleted += OnAllWavesCompleted;
+                _game.Spawner = _spawner;
+            }
             _spawner.spawnX = _enemyX;
             _spawner.spawnYMin = -_cam.orthographicSize * 0.5f;
             _spawner.spawnYMax = _cam.orthographicSize * 0.5f;
-            _spawner.Reset(BuildWaves());
-            _spawner.OnWaveStarted += (n) => _game.NotifyWaveStarted(n);
-            _spawner.OnWaveCompleted += OnWaveCompleted;
-            _spawner.OnAllWavesCompleted += OnAllWavesCompleted;
-            _game.Spawner = _spawner;
+            _spawner.Reset(LevelCatalog.BuildWavesForLevel(levelNum));
+        }
+
+        private void BuildSpawner()
+        {
+            // Initial spawner creation deferred to StartLevel; this is a no-op placeholder.
         }
 
         private void BuildHUD()
@@ -305,58 +387,7 @@ namespace StickEvolve.Bootstrap
 
         private List<WaveConfig> BuildWaves()
         {
-            var waves = new List<WaveConfig>();
-            for (int i = 1; i <= wavesToPlay; i++)
-            {
-                // Мини-босс (Tank ×2) на 5-х волнах, обычный Boss на 10-х, мега-босс на 25/50/75/100.
-                bool isMiniBossWave = (i % 5 == 0) && (i % 10 != 0);
-                bool isBossWave = (i % 10 == 0);
-                bool isMegaWave = (i % 25 == 0);
-
-                var w = new WaveConfig
-                {
-                    waveNumber = i,
-                    // Базовый интервал плавно сокращается, но не быстрее 0.40c между спавнами →
-                    // волны становятся длиннее за счёт количества врагов, а не безумного темпа.
-                    spawnInterval = Mathf.Max(0.40f, 0.95f - i * 0.020f),
-                    postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.28f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.18f,
-                    enemyGoldDrop = 1 + i / 2,
-                    enemies = new List<WaveEnemy>()
-                };
-
-                // — Основной состав, плавный ввод типов; counts заметно подняты —
-                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 5 + (i * 2) / 3 });
-                if (i >= 2)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 2 + i / 3 });
-                if (i >= 3)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 + (i - 3) / 3 });
-                if (i >= 4)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage,     count = 1 + (i - 4) / 4 });
-                if (i >= 5)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 1 + (i - 5) / 5 });
-                if (i >= 6)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 1 + (i - 6) / 4 });
-                if (i >= 7)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 1 + (i - 7) / 5 });
-                if (i >= 8)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 1 + (i - 8) / 4 });
-                if (i >= 9)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 1 + (i - 9) / 4 });
-
-                // — Боссовые слоты —
-                if (isMiniBossWave)
-                {
-                    // Усиленная Tank-волна.
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 2 });
-                }
-                if (isBossWave)
-                {
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
-                }
-                if (isMegaWave)
-                {
-                    // Мега-волна: ещё +1 Босс и заметный «припев» Bomber-ов.
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber, count = 3 });
-                }
-
-                waves.Add(w);
-            }
-            return waves;
+            return LevelCatalog.BuildWavesForLevel(_game.CurrentLevel);
         }
 
         private void SpawnInitialHero()
@@ -409,21 +440,17 @@ namespace StickEvolve.Bootstrap
             cfg.hatColor = new Color(s.tint.r * 0.4f, s.tint.g * 0.4f, s.tint.b * 0.6f);
             cfg.wideShoulders = s.wideShoulders;
             cfg.raiseRightArm = true;
+            cfg.accentColor = new Color(
+                Mathf.Clamp01(s.tint.r + 0.35f),
+                Mathf.Clamp01(s.tint.g + 0.25f),
+                Mathf.Clamp01(s.tint.b + 0.15f));
+            cfg.weaponColor = new Color(0.82f, 0.82f, 0.88f);
             if (s.hasCape)
             {
                 cfg.hasCape = true;
                 cfg.capeColor = s.capeColor;
             }
-            // Снайпер/Маг — лёгкие защитные перчатки
-            if (cls == HeroClass.Sniper || cls == HeroClass.Mage)
-            {
-                cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
-            }
-            // Танк/Берсерк — щитоподобная фигура, без видимых перчаток-кистей
-            if (cls == HeroClass.Tank || cls == HeroClass.Berserker)
-            {
-                cfg.handSize = 0.13f; // крупнее кулаки
-            }
+            ApplyHeroLook(cls, ref cfg);
             StickmanBuilder.Build(go, cfg);
 
             // Тень под героем —
@@ -450,6 +477,72 @@ namespace StickEvolve.Bootstrap
             // Применяем накопленные апгрейды из карт (или базу при чистом сейве) + классовые множители.
             CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
+        }
+
+        private static void ApplyHeroLook(HeroClass cls, ref StickmanConfig cfg)
+        {
+            switch (cls)
+            {
+                case HeroClass.Archer:
+                    cfg.weapon = StickmanWeapon.Bow;
+                    cfg.weaponColor = new Color(0.45f, 0.26f, 0.10f);
+                    cfg.accentColor = new Color(0.88f, 1f, 0.55f);
+                    cfg.hasBackQuiver = true;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.18f, 0.42f, 0.12f);
+                    break;
+                case HeroClass.Mage:
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.weaponColor = new Color(0.40f, 0.24f, 0.11f);
+                    cfg.accentColor = new Color(0.82f, 0.58f, 1f);
+                    cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.75f, 0.45f, 1f, 0.20f);
+                    break;
+                case HeroClass.Tank:
+                    cfg.weapon = StickmanWeapon.Shield;
+                    cfg.weaponColor = new Color(0.68f, 0.72f, 0.78f);
+                    cfg.accentColor = new Color(1f, 0.78f, 0.30f);
+                    cfg.handSize = 0.13f;
+                    cfg.hasShoulderPads = true;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.45f, 0.24f, 0.10f);
+                    break;
+                case HeroClass.Healer:
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.weaponColor = new Color(0.88f, 0.80f, 0.50f);
+                    cfg.accentColor = new Color(0.95f, 1f, 0.72f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.55f, 1f, 0.65f, 0.20f);
+                    break;
+                case HeroClass.Berserker:
+                    cfg.weapon = StickmanWeapon.Axe;
+                    cfg.weaponColor = new Color(0.34f, 0.20f, 0.10f);
+                    cfg.accentColor = new Color(1f, 0.72f, 0.25f);
+                    cfg.handSize = 0.15f;
+                    cfg.hasShoulderPads = true;
+                    break;
+                case HeroClass.Sniper:
+                    cfg.weapon = StickmanWeapon.Rifle;
+                    cfg.weaponColor = new Color(0.14f, 0.16f, 0.18f);
+                    cfg.accentColor = new Color(0.72f, 0.84f, 1f);
+                    cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
+                    cfg.hasBackQuiver = true;
+                    break;
+                case HeroClass.Ninja:
+                    cfg.weapon = StickmanWeapon.Dagger;
+                    cfg.weaponColor = new Color(0.72f, 0.76f, 0.86f);
+                    cfg.accentColor = new Color(0.05f, 0.06f, 0.08f);
+                    cfg.hasMask = true;
+                    cfg.footColor = new Color(0.04f, 0.04f, 0.05f);
+                    break;
+                default:
+                    cfg.weapon = StickmanWeapon.Sword;
+                    cfg.weaponColor = new Color(0.80f, 0.84f, 0.90f);
+                    cfg.accentColor = new Color(1f, 0.90f, 0.45f);
+                    cfg.hasShoulderPads = true;
+                    break;
+            }
         }
 
         private void HookHeroDeath(Hero hero)
@@ -497,6 +590,7 @@ namespace StickEvolve.Bootstrap
         private void Update()
         {
             if (_heroes.Count == 0 || _cam == null) return;
+            if (_levelMap != null && _levelMap.IsOpen) return;
             if (_cardUI != null && _cardUI.IsOpen) return;
             if (_game != null && _game.IsGameOver) return;
 
@@ -582,9 +676,19 @@ namespace StickEvolve.Bootstrap
 
         private void OnAllWavesCompleted()
         {
+            _game.NotifyLevelCompleted(_game.CurrentLevel);
             _game.NotifyAllWavesCompleted();
-            _gameOverUI.Show(_game.CurrentWaveNumber);
-            Debug.Log("[StickEvolve] Все волны пройдены!");
+            Debug.Log($"[StickEvolve] Уровень {_game.CurrentLevel} пройден!");
+
+            // Return to level map after a short delay
+            StartCoroutine(ReturnToMapAfterDelay(1.5f));
+        }
+
+        private IEnumerator ReturnToMapAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            CleanupGameplay();
+            ShowLevelMap();
         }
 
         private void OnGameOver()
@@ -596,20 +700,9 @@ namespace StickEvolve.Bootstrap
 
         private void RestartGame()
         {
-            // Удалить всех старых героев и врагов
-            for (int i = _heroes.Count - 1; i >= 0; i--)
-                if (_heroes[i] != null) Destroy(_heroes[i].gameObject);
-            _heroes.Clear();
-
-            _spawner.ForceKillAll();
-            EnemyRegistry.Instance.Clear();
-            HeroRegistry.Instance.Clear();
-
-            _spawner.Reset(BuildWaves());
             _game.Restart();
-
-            SpawnInitialHero();
-            BeginGame();
+            CleanupGameplay();
+            ShowLevelMap();
         }
 
         private void OnDestroy()
@@ -627,6 +720,10 @@ namespace StickEvolve.Bootstrap
             {
                 _cardUI.OnRerollClicked -= OnShopReroll;
                 _cardUI.OnBuyAllClicked -= OnShopBuyAll;
+            }
+            if (_levelMap != null)
+            {
+                _levelMap.OnLevelSelected -= StartLevel;
             }
         }
     }
