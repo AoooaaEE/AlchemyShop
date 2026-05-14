@@ -122,7 +122,7 @@ namespace StickEvolve.Combat
             {
                 MakeCircle(parent.transform, "Aura", cfg.auraColor,
                     new Vector3(0f, torsoCenterY, 0.08f),
-                    new Vector3(1.5f, 1.9f, 1f) * cfg.bodyScale,
+                    new Vector3(1.5f, 1.9f, 1f),
                     sortingOrder: 1);
             }
 
@@ -218,7 +218,6 @@ namespace StickEvolve.Combat
                         new Vector3((i - 1) * cfg.headSize * 0.22f, headCenterY + cfg.headSize * 0.78f, -0.02f),
                         new Vector3(cfg.headSize * 0.22f, cfg.headSize * 0.25f, 1f),
                         sortingOrder: 8);
-                    crown.localRotation = Quaternion.Euler(0f, 0f, 180f);
                 }
                 MakeRect(parent.transform, "CrownBand", cfg.accentColor,
                     new Vector3(0f, headCenterY + cfg.headSize * 0.58f, -0.02f),
