@@ -300,7 +300,7 @@ namespace StickEvolve.Cards
             switch (card.effect)
             {
                 case CardEffectKind.DamageMultiplier:
-                    BuildPowerIcon(iconRoot.transform, card.frameColor);
+                    BuildSwordIcon(iconRoot.transform, card.frameColor);
                     break;
                 case CardEffectKind.FireRateMultiplier:
                     BuildLightningIcon(iconRoot.transform);
@@ -345,22 +345,14 @@ namespace StickEvolve.Cards
             }
         }
 
-        private void BuildPowerIcon(Transform parent, Color frame)
-        {
-            AddIconShape(parent, "PowerPalm", SpriteFactory.Circle(), new Color(0.96f, 0.82f, 0.62f), new Vector2(2f, -2f), new Vector2(46f, 50f));
-            AddIconRect(parent, "Thumb", new Color(0.96f, 0.82f, 0.62f), new Vector2(-26f, 0f), new Vector2(14f, 38f), -35f);
-            AddIconRect(parent, "FingerA", new Color(0.96f, 0.82f, 0.62f), new Vector2(-18f, 30f), new Vector2(12f, 38f), -6f);
-            AddIconRect(parent, "FingerB", new Color(0.96f, 0.82f, 0.62f), new Vector2(-2f, 34f), new Vector2(12f, 44f), 0f);
-            AddIconRect(parent, "FingerC", new Color(0.96f, 0.82f, 0.62f), new Vector2(14f, 30f), new Vector2(12f, 38f), 8f);
-            AddIconRect(parent, "Wrist", frame, new Vector2(2f, -38f), new Vector2(38f, 18f), 0f);
-            AddIconText(parent, "PowerUp", "↑", 32, new Vector2(38f, 30f), new Vector2(34f, 34f), new Color(1f, 0.92f, 0.25f));
-        }
-
         private void BuildSwordIcon(Transform parent, Color frame)
         {
-            AddIconRect(parent, "Blade", new Color(0.88f, 0.90f, 1f), new Vector2(0f, 0f), new Vector2(16f, 86f), 35f);
-            AddIconRect(parent, "Guard", new Color(1f, 0.82f, 0.25f), new Vector2(-4f, -22f), new Vector2(54f, 8f), 35f);
-            AddIconText(parent, "Up", "↑", 34, new Vector2(34f, 30f), new Vector2(36f, 36f), frame);
+            AddIconRect(parent, "Blade", new Color(0.90f, 0.92f, 1f), new Vector2(0f, 10f), new Vector2(18f, 70f), 0f);
+            AddIconRect(parent, "BladeShine", new Color(1f, 1f, 1f, 0.55f), new Vector2(4f, 12f), new Vector2(4f, 58f), 0f);
+            AddIconShape(parent, "Tip", SpriteFactory.Triangle(), new Color(0.90f, 0.92f, 1f), new Vector2(0f, 52f), new Vector2(22f, 24f));
+            AddIconRect(parent, "Guard", new Color(1f, 0.78f, 0.20f), new Vector2(0f, -28f), new Vector2(56f, 9f), 0f);
+            AddIconRect(parent, "Handle", frame, new Vector2(0f, -48f), new Vector2(12f, 34f), 0f);
+            AddIconShape(parent, "Pommel", SpriteFactory.Circle(), new Color(1f, 0.78f, 0.20f), new Vector2(0f, -66f), new Vector2(18f, 18f));
         }
 
         private void BuildLightningIcon(Transform parent)
@@ -391,13 +383,11 @@ namespace StickEvolve.Cards
         private void BuildHeartIcon(Transform parent)
         {
             var red = new Color(1f, 0.22f, 0.34f);
-            AddIconShape(parent, "HeartLobeL", SpriteFactory.Circle(), red, new Vector2(-14f, 18f), new Vector2(42f, 42f));
-            AddIconShape(parent, "HeartLobeR", SpriteFactory.Circle(), red, new Vector2(14f, 18f), new Vector2(42f, 42f));
-            AddIconRect(parent, "HeartBody", red, new Vector2(0f, -2f), new Vector2(52f, 48f), 45f);
-            AddIconRect(parent, "HeartFill", red, new Vector2(0f, -2f), new Vector2(52f, 48f), -45f);
-            AddIconShape(parent, "HeartTip", SpriteFactory.Triangle(), red, new Vector2(0f, -42f), new Vector2(42f, 34f), 180f);
-            AddIconRect(parent, "PlusV", Color.white, new Vector2(0f, 4f), new Vector2(11f, 40f), 0f);
-            AddIconRect(parent, "PlusH", Color.white, new Vector2(0f, 4f), new Vector2(40f, 11f), 0f);
+            AddIconShape(parent, "HeartLobeL", SpriteFactory.Circle(), red, new Vector2(-12f, 12f), new Vector2(34f, 34f));
+            AddIconShape(parent, "HeartLobeR", SpriteFactory.Circle(), red, new Vector2(12f, 12f), new Vector2(34f, 34f));
+            AddIconRect(parent, "HeartBodyL", red, new Vector2(-10f, -10f), new Vector2(30f, 38f), 45f);
+            AddIconRect(parent, "HeartBodyR", red, new Vector2(10f, -10f), new Vector2(30f, 38f), -45f);
+            AddIconShape(parent, "HeartTip", SpriteFactory.Triangle(), red, new Vector2(0f, -34f), new Vector2(34f, 28f), 180f);
         }
 
         private void BuildThornsShieldIcon(Transform parent)
@@ -443,9 +433,10 @@ namespace StickEvolve.Cards
 
         private void BuildLifestealIcon(Transform parent)
         {
-            BuildHeartIcon(parent);
-            AddIconShape(parent, "BloodDrop", SpriteFactory.Circle(), new Color(0.70f, 0.02f, 0.08f), new Vector2(38f, -34f), new Vector2(24f, 32f));
-            AddIconShape(parent, "DropPoint", SpriteFactory.Triangle(), new Color(0.70f, 0.02f, 0.08f), new Vector2(38f, -52f), new Vector2(22f, 24f), 180f);
+            var blood = new Color(0.82f, 0.02f, 0.08f);
+            AddIconShape(parent, "BloodRound", SpriteFactory.Circle(), blood, new Vector2(0f, -2f), new Vector2(50f, 58f));
+            AddIconShape(parent, "BloodPoint", SpriteFactory.Triangle(), blood, new Vector2(0f, -46f), new Vector2(44f, 38f), 180f);
+            AddIconShape(parent, "BloodHighlight", SpriteFactory.Circle(), new Color(1f, 0.36f, 0.40f, 0.85f), new Vector2(-12f, 10f), new Vector2(13f, 18f));
         }
 
         private void BuildSquadIcon(Transform parent, Color frame)
