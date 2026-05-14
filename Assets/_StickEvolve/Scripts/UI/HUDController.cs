@@ -141,7 +141,7 @@ namespace StickEvolve.UI
 
         private void HookEvents()
         {
-            if (_game == null) return;
+            if (_game == null || _game.Economy == null) return;
             _game.Economy.OnGoldChanged += OnGoldChanged;
             _game.OnWaveNumberChanged += OnWaveChanged;
         }
@@ -149,7 +149,8 @@ namespace StickEvolve.UI
         private void OnDestroy()
         {
             if (_game == null) return;
-            _game.Economy.OnGoldChanged -= OnGoldChanged;
+            if (_game.Economy != null)
+                _game.Economy.OnGoldChanged -= OnGoldChanged;
             _game.OnWaveNumberChanged -= OnWaveChanged;
         }
 
@@ -165,7 +166,7 @@ namespace StickEvolve.UI
 
         private void RefreshAll()
         {
-            if (_game == null) return;
+            if (_game == null || _game.Economy == null) return;
             OnGoldChanged(_game.Economy.Gold);
             OnWaveChanged(_game.CurrentWaveNumber);
         }
