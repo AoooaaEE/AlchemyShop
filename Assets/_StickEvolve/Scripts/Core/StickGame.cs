@@ -2,6 +2,7 @@ using System;
 using StickEvolve.Cards;
 using StickEvolve.Combat;
 using StickEvolve.Data;
+using StickEvolve.Levels;
 using StickEvolve.Wave;
 using UnityEngine;
 
@@ -18,11 +19,14 @@ namespace StickEvolve.Core
         public WaveSpawner Spawner { get; set; }
         public int CurrentWaveNumber { get; private set; } = 1;
         public int HighestWaveCompleted { get; private set; }
+        public int CurrentLevel { get; set; } = 1;
+        public int HighestLevelCompleted { get; private set; }
 
         public event Action<int> OnWaveNumberChanged;
         public event Action OnGameOver;
         public event Action OnGameRestart;
         public event Action OnAllWavesCompleted;
+        public event Action<int> OnLevelCompleted;
 
         public bool IsGameOver { get; private set; }
 
@@ -42,6 +46,8 @@ namespace StickEvolve.Core
 
             _save = StickSaveSystem.Load();
             HighestWaveCompleted = _save.highestWaveCompleted;
+            HighestLevelCompleted = _save.highestLevelCompleted;
+            CurrentLevel = _save.currentLevel > 0 ? _save.currentLevel : 1;
             Economy.Reset(_save.gold);
             CardProgression.LoadFromSave(_save);
         }
@@ -66,6 +72,25 @@ namespace StickEvolve.Core
             }
             PersistSave();
         }
+
+        public void NotifyLevelCompleted(int levelNum)
+        {
+            if (levelNum > HighestLevelCompleted)
+            {
+                HighestLevelCompleted = levelNum;
+                _save.highestLevelCompleted = HighestLevelCompleted;
+            }
+            PersistSave();
+            OnLevelCompleted?.Invoke(levelNum);
+        }
+
+        public void SetCurrentLevel(int level)
+        {
+            CurrentLevel = level;
+            _save.currentLevel = level;
+        }
+
+        public BiomeType CurrentBiome => LevelCatalog.GetBiome(CurrentLevel);
 
         public void NotifyAllWavesCompleted()
         {
@@ -95,6 +120,8 @@ namespace StickEvolve.Core
         {
             _save.gold = Economy.Gold;
             _save.highestWaveCompleted = HighestWaveCompleted;
+            _save.highestLevelCompleted = HighestLevelCompleted;
+            _save.currentLevel = CurrentLevel;
             CardProgression.SaveTo(_save);
             _save.lastExitUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             StickSaveSystem.Save(_save);
@@ -104,6 +131,8 @@ namespace StickEvolve.Core
         {
             CardProgression.ResetAll();
             HighestWaveCompleted = 0;
+            HighestLevelCompleted = 0;
+            CurrentLevel = 1;
             _save = new StickSaveData();
             Economy.Reset(0);
             PersistSave();

@@ -1,5 +1,6 @@
 using StickEvolve.Combat;
 using StickEvolve.Core;
+using StickEvolve.Levels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -140,7 +141,11 @@ namespace StickEvolve.UI
 
         private void OnWaveChanged(int w)
         {
-            if (_waveText != null) _waveText.text = $"WAVE {w}";
+            if (_waveText == null) return;
+            if (_game != null)
+                _waveText.text = $"LVL {_game.CurrentLevel}  WAVE {w}/{LevelCatalog.WavesPerLevel}";
+            else
+                _waveText.text = $"WAVE {w}";
         }
 
         private void RefreshAll()
