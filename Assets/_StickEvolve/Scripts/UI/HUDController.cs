@@ -187,7 +187,7 @@ namespace StickEvolve.UI
             lrt.offsetMin = Vector2.zero;
             lrt.offsetMax = Vector2.zero;
             var label = labelGO.AddComponent<TextMeshProUGUI>();
-            label.text = "Ⅱ";
+            label.text = "II";
             label.fontSize = 44;
             label.alignment = TextAlignmentOptions.Center;
             label.color = Color.white;
