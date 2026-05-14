@@ -300,7 +300,7 @@ namespace StickEvolve.Cards
             switch (card.effect)
             {
                 case CardEffectKind.DamageMultiplier:
-                    BuildSwordIcon(iconRoot.transform, card.frameColor);
+                    BuildPowerIcon(iconRoot.transform, card.frameColor);
                     break;
                 case CardEffectKind.FireRateMultiplier:
                     BuildLightningIcon(iconRoot.transform);
@@ -345,6 +345,17 @@ namespace StickEvolve.Cards
             }
         }
 
+        private void BuildPowerIcon(Transform parent, Color frame)
+        {
+            AddIconShape(parent, "PowerPalm", SpriteFactory.Circle(), new Color(0.96f, 0.82f, 0.62f), new Vector2(2f, -2f), new Vector2(46f, 50f));
+            AddIconRect(parent, "Thumb", new Color(0.96f, 0.82f, 0.62f), new Vector2(-26f, 0f), new Vector2(14f, 38f), -35f);
+            AddIconRect(parent, "FingerA", new Color(0.96f, 0.82f, 0.62f), new Vector2(-18f, 30f), new Vector2(12f, 38f), -6f);
+            AddIconRect(parent, "FingerB", new Color(0.96f, 0.82f, 0.62f), new Vector2(-2f, 34f), new Vector2(12f, 44f), 0f);
+            AddIconRect(parent, "FingerC", new Color(0.96f, 0.82f, 0.62f), new Vector2(14f, 30f), new Vector2(12f, 38f), 8f);
+            AddIconRect(parent, "Wrist", frame, new Vector2(2f, -38f), new Vector2(38f, 18f), 0f);
+            AddIconText(parent, "PowerUp", "↑", 32, new Vector2(38f, 30f), new Vector2(34f, 34f), new Color(1f, 0.92f, 0.25f));
+        }
+
         private void BuildSwordIcon(Transform parent, Color frame)
         {
             AddIconRect(parent, "Blade", new Color(0.88f, 0.90f, 1f), new Vector2(0f, 0f), new Vector2(16f, 86f), 35f);
@@ -379,11 +390,14 @@ namespace StickEvolve.Cards
 
         private void BuildHeartIcon(Transform parent)
         {
-            AddIconShape(parent, "HeartLobeL", SpriteFactory.Circle(), new Color(1f, 0.23f, 0.34f), new Vector2(-18f, 18f), new Vector2(46f, 46f));
-            AddIconShape(parent, "HeartLobeR", SpriteFactory.Circle(), new Color(1f, 0.23f, 0.34f), new Vector2(18f, 18f), new Vector2(46f, 46f));
-            AddIconShape(parent, "HeartPoint", SpriteFactory.Triangle(), new Color(1f, 0.23f, 0.34f), new Vector2(0f, -24f), new Vector2(72f, 72f), 180f);
-            AddIconRect(parent, "PlusV", Color.white, new Vector2(0f, 8f), new Vector2(12f, 46f), 0f);
-            AddIconRect(parent, "PlusH", Color.white, new Vector2(0f, 8f), new Vector2(46f, 12f), 0f);
+            var red = new Color(1f, 0.22f, 0.34f);
+            AddIconShape(parent, "HeartLobeL", SpriteFactory.Circle(), red, new Vector2(-14f, 18f), new Vector2(42f, 42f));
+            AddIconShape(parent, "HeartLobeR", SpriteFactory.Circle(), red, new Vector2(14f, 18f), new Vector2(42f, 42f));
+            AddIconRect(parent, "HeartBody", red, new Vector2(0f, -2f), new Vector2(52f, 48f), 45f);
+            AddIconRect(parent, "HeartFill", red, new Vector2(0f, -2f), new Vector2(52f, 48f), -45f);
+            AddIconShape(parent, "HeartTip", SpriteFactory.Triangle(), red, new Vector2(0f, -42f), new Vector2(42f, 34f), 180f);
+            AddIconRect(parent, "PlusV", Color.white, new Vector2(0f, 4f), new Vector2(11f, 40f), 0f);
+            AddIconRect(parent, "PlusH", Color.white, new Vector2(0f, 4f), new Vector2(40f, 11f), 0f);
         }
 
         private void BuildThornsShieldIcon(Transform parent)
