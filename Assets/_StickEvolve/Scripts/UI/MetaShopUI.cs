@@ -199,7 +199,7 @@ namespace StickEvolve.UI
 
         private void Refresh()
         {
-            _gemsLabel.text = $"◆ Камней эволюции: {MetaProgression.MetaGems}";
+            _gemsLabel.text = $"Камней эволюции: {MetaProgression.MetaGems}";
             float hpMult = MetaProgression.EnemyHpAscensionMult();
             float dmgMult = MetaProgression.EnemyDamageAscensionMult();
             int hpPct = Mathf.RoundToInt((hpMult - 1f) * 100f);
@@ -220,7 +220,7 @@ namespace StickEvolve.UI
                 }
                 else
                 {
-                    row.costLabel.text = $"◆ {nextCost}";
+                    row.costLabel.text = $"{nextCost} камн.";
                     bool canBuy = MetaProgression.MetaGems >= nextCost;
                     row.buttonImg.color = canBuy ? new Color(0.35f, 0.7f, 0.45f) : new Color(0.55f, 0.3f, 0.3f);
                     row.button.interactable = canBuy;

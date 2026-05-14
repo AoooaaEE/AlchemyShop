@@ -83,7 +83,7 @@ namespace StickEvolve.UI
 
         public void RefreshGems()
         {
-            _gemsLabel.text = $"◆ Камней эволюции: {StickEvolve.Data.MetaProgression.MetaGems}";
+            _gemsLabel.text = $"Камней эволюции: {StickEvolve.Data.MetaProgression.MetaGems}";
         }
 
         private void MakeMainButton(string name, string text, Vector2 pos, Color color, Action onClick)
