@@ -12,14 +12,17 @@ namespace StickEvolve.UI
     {
         private GameObject _panel;
         private TextMeshProUGUI _stats;
+        private TextMeshProUGUI _gemsLabel;
         private Action _onRestart;
+        private Action _onMainMenu;
 
-        public static GameOverUI Create(Canvas canvas, Action onRestart)
+        public static GameOverUI Create(Canvas canvas, Action onRestart, Action onMainMenu)
         {
             var go = new GameObject("GameOverUI");
             go.transform.SetParent(canvas.transform, false);
             var ui = go.AddComponent<GameOverUI>();
             ui._onRestart = onRestart;
+            ui._onMainMenu = onMainMenu;
             ui.BuildHidden();
             return ui;
         }
@@ -39,35 +42,43 @@ namespace StickEvolve.UI
             var title = MakeText(_panel.transform, "Title", "GAME OVER", 72, TextAlignmentOptions.Center, new Vector2(0f, 160f), new Vector2(800f, 100f));
             title.color = new Color(0.95f, 0.3f, 0.3f);
 
-            _stats = MakeText(_panel.transform, "Stats", "Достигнута волна: 0", 32, TextAlignmentOptions.Center, new Vector2(0f, 40f), new Vector2(700f, 60f));
+            _stats = MakeText(_panel.transform, "Stats", "Достигнута волна: 0", 32, TextAlignmentOptions.Center, new Vector2(0f, 60f), new Vector2(700f, 60f));
             _stats.color = Color.white;
 
+            _gemsLabel = MakeText(_panel.transform, "Gems", "+0 камней", 30, TextAlignmentOptions.Center, new Vector2(0f, 10f), new Vector2(700f, 50f));
+            _gemsLabel.color = new Color(0.85f, 0.55f, 1f);
+
             // Кнопка restart
-            var btnGO = new GameObject("RestartBtn");
+            MakeButton("RestartBtn", "ПОВТОРИТЬ", new Vector2(0f, -90f),  new Color(0.3f, 0.7f, 0.4f), () => OnRestartClicked());
+            MakeButton("MenuBtn",    "В МЕНЮ",     new Vector2(0f, -200f), new Color(0.45f, 0.45f, 0.6f), () => OnMainMenuClicked());
+
+            _panel.SetActive(false);
+        }
+
+        private void MakeButton(string name, string text, Vector2 pos, Color color, Action onClick)
+        {
+            var btnGO = new GameObject(name);
             btnGO.transform.SetParent(_panel.transform, false);
             var brt = btnGO.AddComponent<RectTransform>();
             brt.anchorMin = new Vector2(0.5f, 0.5f);
             brt.anchorMax = new Vector2(0.5f, 0.5f);
             brt.pivot = new Vector2(0.5f, 0.5f);
-            brt.anchoredPosition = new Vector2(0f, -120f);
-            brt.sizeDelta = new Vector2(280f, 90f);
-
+            brt.anchoredPosition = pos;
+            brt.sizeDelta = new Vector2(360f, 90f);
             var img = btnGO.AddComponent<Image>();
-            img.color = new Color(0.3f, 0.7f, 0.4f);
+            img.color = color;
             var btn = btnGO.AddComponent<Button>();
             btn.targetGraphic = img;
-            btn.onClick.AddListener(() => OnRestartClicked());
-
-            var btnText = MakeText(btnGO.transform, "Label", "ПОВТОРИТЬ", 32, TextAlignmentOptions.Center, Vector2.zero, new Vector2(260f, 80f));
+            btn.onClick.AddListener(() => onClick?.Invoke());
+            var btnText = MakeText(btnGO.transform, "Label", text, 32, TextAlignmentOptions.Center, Vector2.zero, new Vector2(340f, 80f));
             btnText.color = Color.white;
             btnText.raycastTarget = false;
-
-            _panel.SetActive(false);
         }
 
-        public void Show(int reachedWave)
+        public void Show(int reachedWave, long gemsEarned = 0)
         {
             if (_stats != null) _stats.text = $"Достигнута волна: {reachedWave}";
+            if (_gemsLabel != null) _gemsLabel.text = gemsEarned > 0 ? $"+ {gemsEarned} камней эволюции" : "";
             if (_panel != null) _panel.SetActive(true);
         }
 
@@ -80,6 +91,12 @@ namespace StickEvolve.UI
         {
             Hide();
             _onRestart?.Invoke();
+        }
+
+        private void OnMainMenuClicked()
+        {
+            Hide();
+            _onMainMenu?.Invoke();
         }
 
         private TextMeshProUGUI MakeText(Transform parent, string label, string text, float size, TextAlignmentOptions align, Vector2 pos, Vector2 sizeDelta)

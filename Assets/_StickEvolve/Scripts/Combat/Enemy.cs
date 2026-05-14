@@ -261,6 +261,7 @@ namespace StickEvolve.Combat
             int payout = Mathf.Max(1, Mathf.RoundToInt(goldDrop * mult));
             StickGameRefs.Economy?.AddGold(payout);
             GoldDrop.Spawn(transform.position, payout);
+            StickEvolve.Core.StickGame.Instance?.NotifyEnemyKilled();
 
             // Splitter: на смерти крупного спавним 2 мелких рядом, без дальнейшего деления.
             if (kind == EnemyKind.Splitter && splitTier >= 2)

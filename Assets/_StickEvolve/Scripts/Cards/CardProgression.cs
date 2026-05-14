@@ -64,6 +64,19 @@ namespace StickEvolve.Cards
         public static HeroDefaults Compute()
         {
             var d = new HeroDefaults();
+
+            // Мета-апгрейды применяются ПЕРВЫМИ — они модифицируют базовые статы до карт.
+            int metaHp = StickEvolve.Data.MetaProgression.GetLevel("start_hp");
+            int metaDmg = StickEvolve.Data.MetaProgression.GetLevel("start_dmg");
+            int metaCrit = StickEvolve.Data.MetaProgression.GetLevel("start_crit");
+            int metaFire = StickEvolve.Data.MetaProgression.GetLevel("start_fire_rate");
+            int metaStartHero = StickEvolve.Data.MetaProgression.GetLevel("start_hero");
+            d.maxHp *= 1f + 0.10f * metaHp;
+            d.damage *= 1f + 0.10f * metaDmg;
+            d.critChance = Mathf.Clamp01(d.critChance + 0.03f * metaCrit);
+            d.fireRate *= 1f + 0.08f * metaFire;
+            d.extraHeroes += metaStartHero;
+
             foreach (var kv in _levels)
             {
                 var card = CardCatalog.GetById(kv.Key);

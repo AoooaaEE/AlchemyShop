@@ -1,3 +1,4 @@
+using System;
 using StickEvolve.Combat;
 using StickEvolve.Core;
 using TMPro;
@@ -7,16 +8,19 @@ using UnityEngine.UI;
 namespace StickEvolve.UI
 {
     /// <summary>
-    /// Top bar: gold (left), wave# (center), hero hp (right).
+    /// Top bar: gold (left), wave# (center), hero hp (right) + кнопка Пауза.
     /// </summary>
     public class HUDController : MonoBehaviour
     {
         private TextMeshProUGUI _goldText;
         private TextMeshProUGUI _waveText;
+        private TextMeshProUGUI _actText;
         private Image _hpFill;
         private TextMeshProUGUI _hpText;
+        private GameObject _root;
 
         private StickGame _game;
+        public event Action OnPauseClicked;
 
         public static HUDController Create(Canvas canvas, StickGame game)
         {
@@ -31,10 +35,16 @@ namespace StickEvolve.UI
 
             var hud = go.AddComponent<HUDController>();
             hud._game = game;
+            hud._root = go;
             hud.BuildLayout();
             hud.HookEvents();
             hud.RefreshAll();
             return hud;
+        }
+
+        public void SetVisible(bool visible)
+        {
+            if (_root != null) _root.SetActive(visible);
         }
 
         private void BuildLayout()
@@ -60,14 +70,26 @@ namespace StickEvolve.UI
             goldRT.sizeDelta = new Vector2(400f, 60f);
             _goldText.color = new Color(1f, 0.85f, 0.2f);
 
-            _waveText = MakeText("Wave", "WAVE 1", 40, TextAlignmentOptions.Center);
+            _waveText = MakeText("Wave", "WAVE 1", 36, TextAlignmentOptions.Center);
             var waveRT = _waveText.rectTransform;
             waveRT.anchorMin = new Vector2(0.5f, 0.5f);
             waveRT.anchorMax = new Vector2(0.5f, 0.5f);
             waveRT.pivot = new Vector2(0.5f, 0.5f);
-            waveRT.anchoredPosition = new Vector2(0f, 0f);
-            waveRT.sizeDelta = new Vector2(400f, 60f);
+            waveRT.anchoredPosition = new Vector2(0f, 14f);
+            waveRT.sizeDelta = new Vector2(400f, 50f);
             _waveText.color = Color.white;
+
+            _actText = MakeText("Act", "АКТ 1 · волна 1/10", 22, TextAlignmentOptions.Center);
+            var actRT = _actText.rectTransform;
+            actRT.anchorMin = new Vector2(0.5f, 0.5f);
+            actRT.anchorMax = new Vector2(0.5f, 0.5f);
+            actRT.pivot = new Vector2(0.5f, 0.5f);
+            actRT.anchoredPosition = new Vector2(0f, -18f);
+            actRT.sizeDelta = new Vector2(360f, 30f);
+            _actText.color = new Color(1f, 0.92f, 0.45f);
+
+            // Кнопка Пауза (левый верх)
+            BuildPauseButton();
 
             // HP bar (right)
             var hpFrame = new GameObject("HPFrame");
@@ -119,6 +141,40 @@ namespace StickEvolve.UI
             return tmp;
         }
 
+        private void BuildPauseButton()
+        {
+            var btnGO = new GameObject("PauseBtn");
+            btnGO.transform.SetParent(transform, false);
+            var brt = btnGO.AddComponent<RectTransform>();
+            brt.anchorMin = new Vector2(1f, 1f);
+            brt.anchorMax = new Vector2(1f, 1f);
+            brt.pivot = new Vector2(1f, 1f);
+            // Кнопка под верхней полосой HUD, чтобы не налезать на HP-бар.
+            brt.anchoredPosition = new Vector2(-20f, -110f);
+            brt.sizeDelta = new Vector2(72f, 72f);
+
+            var img = btnGO.AddComponent<Image>();
+            img.color = new Color(0.1f, 0.12f, 0.18f, 0.85f);
+            var btn = btnGO.AddComponent<Button>();
+            btn.targetGraphic = img;
+            btn.onClick.AddListener(() => OnPauseClicked?.Invoke());
+
+            var labelGO = new GameObject("PauseLabel");
+            labelGO.transform.SetParent(btnGO.transform, false);
+            var lrt = labelGO.AddComponent<RectTransform>();
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var label = labelGO.AddComponent<TextMeshProUGUI>();
+            label.text = "Ⅱ";
+            label.fontSize = 44;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = Color.white;
+            label.raycastTarget = false;
+            label.fontStyle = FontStyles.Bold;
+        }
+
         private void HookEvents()
         {
             if (_game == null) return;
@@ -141,6 +197,16 @@ namespace StickEvolve.UI
         private void OnWaveChanged(int w)
         {
             if (_waveText != null) _waveText.text = $"WAVE {w}";
+            if (_actText != null && _game != null)
+            {
+                int act = _game.CurrentAct;
+                int waveInAct = _game.CurrentWaveInAct;
+                bool isBoss = _game.IsBossWave(w);
+                _actText.text = isBoss
+                    ? $"АКТ {act} · БОСС!"
+                    : $"АКТ {act} · волна {waveInAct}/10";
+                _actText.color = isBoss ? new Color(1f, 0.4f, 0.4f) : new Color(1f, 0.92f, 0.45f);
+            }
         }
 
         private void RefreshAll()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using StickEvolve.Cards;
 using StickEvolve.Combat;
 using StickEvolve.Core;
+using StickEvolve.Data;
 using StickEvolve.Economy;
 using StickEvolve.UI;
 using StickEvolve.Wave;
@@ -26,6 +27,12 @@ namespace StickEvolve.Bootstrap
         private HUDController _hud;
         private CardChoiceUI _cardUI;
         private GameOverUI _gameOverUI;
+        private MainMenuUI _mainMenuUI;
+        private MetaShopUI _metaShopUI;
+        private StatsPanelUI _statsUI;
+        private PauseMenuUI _pauseUI;
+        private TutorialOverlayUI _tutorialUI;
+        private ActIntroUI _actIntroUI;
         private Camera _cam;
         private Canvas _canvas;
 
@@ -35,7 +42,9 @@ namespace StickEvolve.Bootstrap
         private float _enemyX = 6f;
 
         private int _rerollCount;
+        private int _freeRerollsAvailable;
         private const int RerollBaseCost = 3;
+        private bool _gameStarted;
 
         // Стоимость "Купить всё" растёт от номера волны, иначе к 10-й волне это становится бесплатным.
         private int CurrentBuyAllCost => 25 + _spawner.CurrentWaveIndex * 8;
@@ -50,6 +59,7 @@ namespace StickEvolve.Bootstrap
 
         private void Start()
         {
+            Time.timeScale = 1f;
             BuildCamera();
             ComputePlayfieldBounds();
             BuildBackground();
@@ -59,13 +69,35 @@ namespace StickEvolve.Bootstrap
             BuildHUD();
             BuildCardUI();
             BuildGameOverUI();
+            BuildPauseUI();
+            BuildTutorialUI();
+            BuildActIntroUI();
+            BuildMainMenuUI();
 
             CardEffect.ExtraHeroSpawner = SpawnExtraHero;
             CardEffect.ExtraHeroSpawnerByClass = SpawnExtraHeroOfClass;
             Hero.CloneSpawnerFunc = SpawnHeroClone;
 
+            // Сразу показываем главное меню — игра не стартует без клика.
+            _hud.SetVisible(false);
+            _mainMenuUI.Show();
+        }
+
+        private void StartGameFromMenu()
+        {
+            _mainMenuUI.Hide();
+            _hud.SetVisible(true);
             SpawnInitialHero();
+            _gameStarted = true;
             BeginGame();
+
+            // Туториал показывается только первый раз.
+            var save = _game.GetSaveSnapshot();
+            if (save != null && !save.tutorialShown)
+            {
+                _tutorialUI.Show();
+                _game.MarkTutorialShown();
+            }
         }
 
         private void BuildCamera()
@@ -288,6 +320,12 @@ namespace StickEvolve.Bootstrap
         private void BuildHUD()
         {
             _hud = HUDController.Create(_canvas, _game);
+            _hud.OnPauseClicked += () =>
+            {
+                if (_game.IsGameOver) return;
+                if (_pauseUI.IsOpen) _pauseUI.Hide();
+                else _pauseUI.Show();
+            };
         }
 
         private void BuildCardUI()
@@ -299,12 +337,73 @@ namespace StickEvolve.Bootstrap
 
         private void BuildGameOverUI()
         {
-            _gameOverUI = GameOverUI.Create(_canvas, RestartGame);
+            _gameOverUI = GameOverUI.Create(_canvas, RestartGame, BackToMainMenu);
             _game.OnGameOver += OnGameOver;
+            _game.OnActStarted += (act) => _actIntroUI.ShowActStart(act);
+            _game.OnActCompleted += (act) => _actIntroUI.ShowActComplete(act);
+        }
+
+        private void BuildPauseUI()
+        {
+            _pauseUI = PauseMenuUI.Create(_canvas,
+                onResume: () => _pauseUI.Hide(),
+                onRestart: () => { _pauseUI.Hide(); RestartGame(); },
+                onMainMenu: () => { _pauseUI.Hide(); BackToMainMenu(); });
+        }
+
+        private void BuildTutorialUI()
+        {
+            _tutorialUI = TutorialOverlayUI.Create(_canvas);
+        }
+
+        private void BuildActIntroUI()
+        {
+            _actIntroUI = ActIntroUI.Create(_canvas);
+        }
+
+        private void BuildMainMenuUI()
+        {
+            _mainMenuUI = MainMenuUI.Create(_canvas,
+                onPlay: StartGameFromMenu,
+                onMetaShop: () => { _metaShopUI ??= MetaShopUI.Create(_canvas, OnMetaShopClose); _mainMenuUI.Hide(); _metaShopUI.Show(); },
+                onStats: () => { _statsUI ??= StatsPanelUI.Create(_canvas, OnStatsClose); _mainMenuUI.Hide(); _statsUI.Show(); });
+        }
+
+        private void OnMetaShopClose()
+        {
+            _metaShopUI.Hide();
+            _mainMenuUI.Show();
+        }
+
+        private void OnStatsClose()
+        {
+            _statsUI.Hide();
+            _mainMenuUI.Show();
+        }
+
+        private void BackToMainMenu()
+        {
+            // Сбрасываем игровое состояние и возвращаемся в главное меню.
+            Time.timeScale = 1f;
+            for (int i = _heroes.Count - 1; i >= 0; i--)
+                if (_heroes[i] != null) Destroy(_heroes[i].gameObject);
+            _heroes.Clear();
+            if (_spawner != null) _spawner.ForceKillAll();
+            EnemyRegistry.Instance.Clear();
+            HeroRegistry.Instance.Clear();
+            _spawner.Reset(BuildWaves());
+            _game.Restart();
+            _gameStarted = false;
+            _hud.SetVisible(false);
+            _tutorialUI.Hide();
+            _mainMenuUI.Show();
         }
 
         private List<WaveConfig> BuildWaves()
         {
+            // Ascension-множители от мета-апгрейдов («чем сильнее игрок вне ранна, тем жирнее враги в ранне»).
+            float ascHp = MetaProgression.EnemyHpAscensionMult();
+            float ascDmg = MetaProgression.EnemyDamageAscensionMult();
             var waves = new List<WaveConfig>();
             for (int i = 1; i <= wavesToPlay; i++)
             {
@@ -320,8 +419,8 @@ namespace StickEvolve.Bootstrap
                     // волны становятся длиннее за счёт количества врагов, а не безумного темпа.
                     spawnInterval = Mathf.Max(0.40f, 0.95f - i * 0.020f),
                     postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.28f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.18f,
+                    enemyHpMultiplier = (1f + (i - 1) * 0.28f) * ascHp,
+                    enemyDamageMultiplier = (1f + (i - 1) * 0.18f) * ascDmg,
                     enemyGoldDrop = 1 + i / 2,
                     enemies = new List<WaveEnemy>()
                 };
@@ -345,7 +444,22 @@ namespace StickEvolve.Bootstrap
                 }
                 if (isBossWave)
                 {
+                    int act = i / 10;
                     w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
+                    // Тематический эскорт босса для каждого акта.
+                    switch (act)
+                    {
+                        case 1: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 }); break;
+                        case 2: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 2 }); break;
+                        case 3: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 2 }); break;
+                        case 4: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 3 }); break;
+                        case 6: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 4 }); break;
+                        case 7: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 3 }); break;
+                        case 8: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 3 });
+                                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 2 }); break;
+                        case 9: w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 5 }); break;
+                        // case 5 и 10 — мега-волны (см. ниже).
+                    }
                 }
                 if (isMegaWave)
                 {
@@ -496,9 +610,21 @@ namespace StickEvolve.Bootstrap
 
         private void Update()
         {
+            // Escape — пауза в раннее. Игнорируется в меню/во время Game Over/в шопе.
+            if (_gameStarted && Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (!_game.IsGameOver && (_cardUI == null || !_cardUI.IsOpen))
+                {
+                    if (_pauseUI.IsOpen) _pauseUI.Hide();
+                    else _pauseUI.Show();
+                }
+            }
+
+            if (!_gameStarted) return;
             if (_heroes.Count == 0 || _cam == null) return;
             if (_cardUI != null && _cardUI.IsOpen) return;
             if (_game != null && _game.IsGameOver) return;
+            if (_pauseUI != null && _pauseUI.IsOpen) return;
 
             float vert = 0f;
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) vert += 1f;
@@ -528,19 +654,34 @@ namespace StickEvolve.Bootstrap
             ReviveAndHealHeroes();
 
             _rerollCount = 0;
+            // Бесплатные рероллы от мета-апгрейда (выдаются в начале каждого выбора карты).
+            _freeRerollsAvailable = MetaProgression.GetLevel("start_rerolls");
             var options = CardCatalog.RollThree();
-            _cardUI.Show(options, _game.Economy.Gold, CurrentRerollBaseCost, CurrentBuyAllCost, OnCardPicked);
+            _cardUI.Show(options, _game.Economy.Gold, CurrentEffectiveRerollCost(), CurrentBuyAllCost, OnCardPicked);
+        }
+
+        private int CurrentEffectiveRerollCost()
+        {
+            if (_freeRerollsAvailable > 0) return 0;
+            return CurrentRerollBaseCost + _rerollCount;
         }
 
         private void OnShopReroll()
         {
-            int cost = CurrentRerollBaseCost + _rerollCount;
-            if (_game.Economy.Gold < cost) return;
-            _game.Economy.TrySpend(cost);
-            _rerollCount++;
+            int cost = CurrentEffectiveRerollCost();
+            if (_freeRerollsAvailable > 0)
+            {
+                _freeRerollsAvailable--;
+            }
+            else
+            {
+                if (_game.Economy.Gold < cost) return;
+                _game.Economy.TrySpend(cost);
+                _rerollCount++;
+            }
             var newOptions = CardCatalog.RollThree();
             _cardUI.ReplaceCards(newOptions);
-            _cardUI.RefreshShop(_game.Economy.Gold, CurrentRerollBaseCost + _rerollCount, CurrentBuyAllCost);
+            _cardUI.RefreshShop(_game.Economy.Gold, CurrentEffectiveRerollCost(), CurrentBuyAllCost);
         }
 
         private void OnShopBuyAll()
@@ -583,7 +724,8 @@ namespace StickEvolve.Bootstrap
         private void OnAllWavesCompleted()
         {
             _game.NotifyAllWavesCompleted();
-            _gameOverUI.Show(_game.CurrentWaveNumber);
+            _actIntroUI.ShowAllComplete();
+            _gameOverUI.Show(_game.CurrentWaveNumber, _game.LastRunGemsEarned);
             Debug.Log("[StickEvolve] Все волны пройдены!");
         }
 
@@ -591,11 +733,15 @@ namespace StickEvolve.Bootstrap
         {
             // Останавливаем волну: без этого новые враги продолжают спавниться и двигаться поверх экрана Game Over.
             if (_spawner != null) _spawner.StopCurrent();
-            _gameOverUI.Show(_game.CurrentWaveNumber);
+            // Мягкий freeze: пули и враги останавливаются, но UI работает (использует unscaledTime).
+            Time.timeScale = 0f;
+            _gameOverUI.Show(_game.CurrentWaveNumber, _game.LastRunGemsEarned);
         }
 
         private void RestartGame()
         {
+            // Снимаем freeze от Game Over.
+            Time.timeScale = 1f;
             // Удалить всех старых героев и врагов
             for (int i = _heroes.Count - 1; i >= 0; i--)
                 if (_heroes[i] != null) Destroy(_heroes[i].gameObject);
@@ -605,6 +751,7 @@ namespace StickEvolve.Bootstrap
             EnemyRegistry.Instance.Clear();
             HeroRegistry.Instance.Clear();
 
+            // Перестраиваем волны по текущим ascension-множителям (вдруг игрок что-то купил в меню).
             _spawner.Reset(BuildWaves());
             _game.Restart();
 
