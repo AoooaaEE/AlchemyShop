@@ -196,6 +196,27 @@ namespace StickEvolve.Bootstrap
                 t.transform.localScale = new Vector3(h * 0.7f, h, 1f);
             }
 
+            for (int i = 0; i < 9; i++)
+            {
+                var ruin = new GameObject($"AncientRune_{i}");
+                var sr = ruin.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.White();
+                sr.color = new Color(0.52f, 0.52f, 0.45f, 0.55f);
+                sr.sortingOrder = -16;
+                ruin.transform.position = new Vector3(-9f + i * 2.2f + Random.Range(-0.25f, 0.25f), -1.42f, 0f);
+                ruin.transform.localScale = new Vector3(Random.Range(0.10f, 0.18f), Random.Range(0.45f, 0.85f), 1f);
+                ruin.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(-8f, 8f));
+
+                var gem = new GameObject($"AncientRuneGem_{i}");
+                gem.transform.SetParent(ruin.transform, false);
+                gem.transform.localPosition = new Vector3(0f, 0.38f, -0.01f);
+                gem.transform.localScale = Vector3.one * 0.9f;
+                var gemSR = gem.AddComponent<SpriteRenderer>();
+                gemSR.sprite = SpriteFactory.Spark();
+                gemSR.color = new Color(0.35f, 0.90f, 1f, 0.55f);
+                gemSR.sortingOrder = -15;
+            }
+
             // — Земля: основная полоса + верхний травяной слой —
             var ground = new GameObject("Ground");
             var groundSR = ground.AddComponent<SpriteRenderer>();
@@ -212,6 +233,17 @@ namespace StickEvolve.Bootstrap
             grassSR.sortingOrder = -9;
             grass.transform.position = new Vector3(0f, -1.45f, 0f);
             grass.transform.localScale = new Vector3(40f, 0.22f, 1f);
+
+            for (int i = 0; i < 18; i++)
+            {
+                var pebble = new GameObject($"Pebble_{i}");
+                var sr = pebble.AddComponent<SpriteRenderer>();
+                sr.sprite = SpriteFactory.SoftCircle();
+                sr.color = new Color(0.28f, 0.24f, 0.20f, 0.45f);
+                sr.sortingOrder = -6;
+                pebble.transform.position = new Vector3(-10f + i * 1.2f + Random.Range(-0.45f, 0.45f), Random.Range(-3.25f, -1.70f), 0f);
+                pebble.transform.localScale = new Vector3(Random.Range(0.12f, 0.30f), Random.Range(0.05f, 0.12f), 1f);
+            }
 
             // — Кустики травы перед игроком —
             for (int i = 0; i < 22; i++)
@@ -409,21 +441,17 @@ namespace StickEvolve.Bootstrap
             cfg.hatColor = new Color(s.tint.r * 0.4f, s.tint.g * 0.4f, s.tint.b * 0.6f);
             cfg.wideShoulders = s.wideShoulders;
             cfg.raiseRightArm = true;
+            cfg.accentColor = new Color(
+                Mathf.Clamp01(s.tint.r + 0.35f),
+                Mathf.Clamp01(s.tint.g + 0.25f),
+                Mathf.Clamp01(s.tint.b + 0.15f));
+            cfg.weaponColor = new Color(0.82f, 0.82f, 0.88f);
             if (s.hasCape)
             {
                 cfg.hasCape = true;
                 cfg.capeColor = s.capeColor;
             }
-            // Снайпер/Маг — лёгкие защитные перчатки
-            if (cls == HeroClass.Sniper || cls == HeroClass.Mage)
-            {
-                cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
-            }
-            // Танк/Берсерк — щитоподобная фигура, без видимых перчаток-кистей
-            if (cls == HeroClass.Tank || cls == HeroClass.Berserker)
-            {
-                cfg.handSize = 0.13f; // крупнее кулаки
-            }
+            ApplyHeroLook(cls, ref cfg);
             StickmanBuilder.Build(go, cfg);
 
             // Тень под героем —
@@ -450,6 +478,72 @@ namespace StickEvolve.Bootstrap
             // Применяем накопленные апгрейды из карт (или базу при чистом сейве) + классовые множители.
             CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
+        }
+
+        private static void ApplyHeroLook(HeroClass cls, ref StickmanConfig cfg)
+        {
+            switch (cls)
+            {
+                case HeroClass.Archer:
+                    cfg.weapon = StickmanWeapon.Bow;
+                    cfg.weaponColor = new Color(0.45f, 0.26f, 0.10f);
+                    cfg.accentColor = new Color(0.88f, 1f, 0.55f);
+                    cfg.hasBackQuiver = true;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.18f, 0.42f, 0.12f);
+                    break;
+                case HeroClass.Mage:
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.weaponColor = new Color(0.40f, 0.24f, 0.11f);
+                    cfg.accentColor = new Color(0.82f, 0.58f, 1f);
+                    cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.75f, 0.45f, 1f, 0.20f);
+                    break;
+                case HeroClass.Tank:
+                    cfg.weapon = StickmanWeapon.Shield;
+                    cfg.weaponColor = new Color(0.68f, 0.72f, 0.78f);
+                    cfg.accentColor = new Color(1f, 0.78f, 0.30f);
+                    cfg.handSize = 0.13f;
+                    cfg.hasShoulderPads = true;
+                    cfg.hasHat = true;
+                    cfg.hatColor = new Color(0.45f, 0.24f, 0.10f);
+                    break;
+                case HeroClass.Healer:
+                    cfg.weapon = StickmanWeapon.Staff;
+                    cfg.weaponColor = new Color(0.88f, 0.80f, 0.50f);
+                    cfg.accentColor = new Color(0.95f, 1f, 0.72f);
+                    cfg.hasAura = true;
+                    cfg.auraColor = new Color(0.55f, 1f, 0.65f, 0.20f);
+                    break;
+                case HeroClass.Berserker:
+                    cfg.weapon = StickmanWeapon.Axe;
+                    cfg.weaponColor = new Color(0.34f, 0.20f, 0.10f);
+                    cfg.accentColor = new Color(1f, 0.72f, 0.25f);
+                    cfg.handSize = 0.15f;
+                    cfg.hasShoulderPads = true;
+                    break;
+                case HeroClass.Sniper:
+                    cfg.weapon = StickmanWeapon.Rifle;
+                    cfg.weaponColor = new Color(0.14f, 0.16f, 0.18f);
+                    cfg.accentColor = new Color(0.72f, 0.84f, 1f);
+                    cfg.handColor = new Color(0.20f, 0.18f, 0.15f);
+                    cfg.hasBackQuiver = true;
+                    break;
+                case HeroClass.Ninja:
+                    cfg.weapon = StickmanWeapon.Dagger;
+                    cfg.weaponColor = new Color(0.72f, 0.76f, 0.86f);
+                    cfg.accentColor = new Color(0.05f, 0.06f, 0.08f);
+                    cfg.hasMask = true;
+                    cfg.footColor = new Color(0.04f, 0.04f, 0.05f);
+                    break;
+                default:
+                    cfg.weapon = StickmanWeapon.Sword;
+                    cfg.weaponColor = new Color(0.80f, 0.84f, 0.90f);
+                    cfg.accentColor = new Color(1f, 0.90f, 0.45f);
+                    cfg.hasShoulderPads = true;
+                    break;
+            }
         }
 
         private void HookHeroDeath(Hero hero)
