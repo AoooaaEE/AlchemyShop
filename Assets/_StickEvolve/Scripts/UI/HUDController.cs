@@ -140,7 +140,10 @@ namespace StickEvolve.UI
 
         private void OnWaveChanged(int w)
         {
-            if (_waveText != null) _waveText.text = $"WAVE {w}";
+            if (_waveText == null) return;
+            int waveInLevel = ((w - 1) % 10) + 1;
+            int level = ((w - 1) / 10) + 1;
+            _waveText.text = $"Ур.{level}  ·  Волна {waveInLevel}/10";
         }
 
         private void RefreshAll()

@@ -17,8 +17,17 @@ namespace StickEvolve.Bootstrap
     /// </summary>
     public class PrototypeBootstrapper : MonoBehaviour
     {
-        [Header("Конфиг")]
-        [SerializeField] private int wavesToPlay = 100;
+        [Header("Кампания")]
+        [SerializeField] private int currentLevelNumber = 1;
+        public static PrototypeBootstrapper Instance { get; private set; }
+        public int CurrentLevelNumber => currentLevelNumber;
+        public LevelDefinition CurrentLevel { get; private set; }
+
+        public void SetLevelNumber(int level)
+        {
+            currentLevelNumber = Mathf.Clamp(level, 1, CampaignBuilder.TotalLevels);
+        }
+
         [SerializeField] private float heroMoveSpeed = 4.5f;
 
         private StickGame _game;
@@ -50,6 +59,7 @@ namespace StickEvolve.Bootstrap
 
         private void Start()
         {
+            Instance = this;
             BuildCamera();
             ComputePlayfieldBounds();
             BuildBackground();
@@ -305,58 +315,8 @@ namespace StickEvolve.Bootstrap
 
         private List<WaveConfig> BuildWaves()
         {
-            var waves = new List<WaveConfig>();
-            for (int i = 1; i <= wavesToPlay; i++)
-            {
-                // Мини-босс (Tank ×2) на 5-х волнах, обычный Boss на 10-х, мега-босс на 25/50/75/100.
-                bool isMiniBossWave = (i % 5 == 0) && (i % 10 != 0);
-                bool isBossWave = (i % 10 == 0);
-                bool isMegaWave = (i % 25 == 0);
-
-                var w = new WaveConfig
-                {
-                    waveNumber = i,
-                    // Базовый интервал плавно сокращается, но не быстрее 0.40c между спавнами →
-                    // волны становятся длиннее за счёт количества врагов, а не безумного темпа.
-                    spawnInterval = Mathf.Max(0.40f, 0.95f - i * 0.020f),
-                    postWaveDelay = 1.0f,
-                    enemyHpMultiplier = 1f + (i - 1) * 0.28f,
-                    enemyDamageMultiplier = 1f + (i - 1) * 0.18f,
-                    enemyGoldDrop = 1 + i / 2,
-                    enemies = new List<WaveEnemy>()
-                };
-
-                // — Основной состав, плавный ввод типов; counts заметно подняты —
-                w.enemies.Add(new WaveEnemy { kind = EnemyKind.Fighter, count = 5 + (i * 2) / 3 });
-                if (i >= 2)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Runner,   count = 2 + i / 3 });
-                if (i >= 3)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank,     count = 1 + (i - 3) / 3 });
-                if (i >= 4)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Mage,     count = 1 + (i - 4) / 4 });
-                if (i >= 5)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Healer,   count = 1 + (i - 5) / 5 });
-                if (i >= 6)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Shielder, count = 1 + (i - 6) / 4 });
-                if (i >= 7)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Sniper,   count = 1 + (i - 7) / 5 });
-                if (i >= 8)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Splitter, count = 1 + (i - 8) / 4 });
-                if (i >= 9)  w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber,   count = 1 + (i - 9) / 4 });
-
-                // — Боссовые слоты —
-                if (isMiniBossWave)
-                {
-                    // Усиленная Tank-волна.
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Tank, count = 2 });
-                }
-                if (isBossWave)
-                {
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
-                }
-                if (isMegaWave)
-                {
-                    // Мега-волна: ещё +1 Босс и заметный «припев» Bomber-ов.
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Boss, count = 1 });
-                    w.enemies.Add(new WaveEnemy { kind = EnemyKind.Bomber, count = 3 });
-                }
-
-                waves.Add(w);
-            }
-            return waves;
+            CurrentLevel = CampaignBuilder.Build(currentLevelNumber);
+            return CurrentLevel.waves;
         }
 
         private void SpawnInitialHero()
