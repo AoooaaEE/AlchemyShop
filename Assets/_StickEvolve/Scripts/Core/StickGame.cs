@@ -44,6 +44,7 @@ namespace StickEvolve.Core
             HighestWaveCompleted = _save.highestWaveCompleted;
             Economy.Reset(_save.gold);
             CardProgression.LoadFromSave(_save);
+            LevelProgress.LoadFromSave(_save);
         }
 
         private void OnDestroy()
@@ -96,6 +97,7 @@ namespace StickEvolve.Core
             _save.gold = Economy.Gold;
             _save.highestWaveCompleted = HighestWaveCompleted;
             CardProgression.SaveTo(_save);
+            LevelProgress.SaveTo(_save);
             _save.lastExitUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             StickSaveSystem.Save(_save);
         }
@@ -103,6 +105,7 @@ namespace StickEvolve.Core
         public void ResetAllProgress()
         {
             CardProgression.ResetAll();
+            LevelProgress.ResetAll();
             HighestWaveCompleted = 0;
             _save = new StickSaveData();
             Economy.Reset(0);

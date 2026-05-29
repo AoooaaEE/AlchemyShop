@@ -35,6 +35,8 @@ namespace StickEvolve.Bootstrap
         private HUDController _hud;
         private CardChoiceUI _cardUI;
         private GameOverUI _gameOverUI;
+        private LevelCompleteUI _levelCompleteUI;
+        private WorldMapUI _worldMapUI;
         private Camera _cam;
         private Canvas _canvas;
 
@@ -44,6 +46,7 @@ namespace StickEvolve.Bootstrap
         private float _enemyX = 6f;
 
         private int _rerollCount;
+        private long _goldAtLevelStart;
         private const int RerollBaseCost = 3;
 
         // Стоимость "Купить всё" растёт от номера волны, иначе к 10-й волне это становится бесплатным.
@@ -69,6 +72,8 @@ namespace StickEvolve.Bootstrap
             BuildHUD();
             BuildCardUI();
             BuildGameOverUI();
+            BuildLevelCompleteUI();
+            BuildWorldMapUI();
 
             CardEffect.ExtraHeroSpawner = SpawnExtraHero;
             CardEffect.ExtraHeroSpawnerByClass = SpawnExtraHeroOfClass;
@@ -313,6 +318,40 @@ namespace StickEvolve.Bootstrap
             _game.OnGameOver += OnGameOver;
         }
 
+        private void BuildLevelCompleteUI()
+        {
+            _levelCompleteUI = LevelCompleteUI.Create(_canvas, GoToNextLevel, ShowWorldMap);
+        }
+
+        private void BuildWorldMapUI()
+        {
+            _worldMapUI = WorldMapUI.Create(_canvas, OnLevelChosenFromMap, OnMapClosed);
+        }
+
+        public void ShowWorldMap()
+        {
+            if (_worldMapUI != null) _worldMapUI.Show();
+        }
+
+        private void OnLevelChosenFromMap(int level)
+        {
+            SetLevelNumber(level);
+            if (_worldMapUI != null) _worldMapUI.Hide();
+            RestartGame();
+        }
+
+        private void OnMapClosed()
+        {
+            // Если игрок закрыл карту через X — продолжаем с того уровня, на котором были.
+        }
+
+        private void GoToNextLevel()
+        {
+            SetLevelNumber(Mathf.Clamp(currentLevelNumber + 1, 1, CampaignBuilder.TotalLevels));
+            if (_worldMapUI != null) _worldMapUI.Hide();
+            RestartGame();
+        }
+
         private List<WaveConfig> BuildWaves()
         {
             CurrentLevel = CampaignBuilder.Build(currentLevelNumber);
@@ -450,6 +489,7 @@ namespace StickEvolve.Bootstrap
 
         private void BeginGame()
         {
+            _goldAtLevelStart = _game != null ? _game.Economy.Gold : 0;
             _game.NotifyWaveStarted(_spawner.waves[0].waveNumber);
             _spawner.StartNextWave();
         }
@@ -543,8 +583,35 @@ namespace StickEvolve.Bootstrap
         private void OnAllWavesCompleted()
         {
             _game.NotifyAllWavesCompleted();
-            _gameOverUI.Show(_game.CurrentWaveNumber);
-            Debug.Log("[StickEvolve] Все волны пройдены!");
+            if (_spawner != null) _spawner.StopCurrent();
+
+            int stars = ComputeStars();
+            LevelProgress.MarkCompleted(currentLevelNumber, stars);
+            if (_game != null) _game.PersistSave();
+
+            ReviveAndHealHeroes();
+            long goldEarned = _game.Economy.Gold - _goldAtLevelStart;
+            if (goldEarned < 0) goldEarned = _game.Economy.Gold;
+            _levelCompleteUI?.Show(currentLevelNumber, goldEarned, stars);
+        }
+
+        private int ComputeStars()
+        {
+            float totalCur = 0f, totalMax = 0f;
+            for (int i = 0; i < _heroes.Count; i++)
+            {
+                var h = _heroes[i];
+                if (h == null) continue;
+                var hp = h.GetComponent<Health>();
+                if (hp == null) continue;
+                totalCur += Mathf.Max(0f, hp.CurrentHp);
+                totalMax += hp.MaxHp;
+            }
+            if (totalMax <= 0f) return 1;
+            float ratio = totalCur / totalMax;
+            if (ratio >= 0.75f) return 3;
+            if (ratio >= 0.40f) return 2;
+            return 1;
         }
 
         private void OnGameOver()
