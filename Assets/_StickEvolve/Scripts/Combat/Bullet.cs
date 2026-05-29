@@ -93,7 +93,7 @@ namespace StickEvolve.Combat
                 crit = true;
             }
             dmg.TakeDamage(final, transform.position);
-            DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white);
+            DamageNumber.Spawn(transform.position, final, crit ? ColorPalette.GoldBright : ColorPalette.HitFlash);
 
             if (crit && ownerHero != null) ownerHero.OnCrit(transform.position);
 
@@ -122,7 +122,7 @@ namespace StickEvolve.Combat
             var hp = ally.GetComponent<Health>() ?? ally.GetComponentInParent<Health>();
             if (hp == null || !hp.IsAlive) return;
             hp.Heal(damage);
-            DamageNumber.Spawn(transform.position, damage, new Color(0.4f, 1f, 0.5f));
+            DamageNumber.Spawn(transform.position, damage, ColorPalette.BulletAlly);
         }
 
         private void ApplySplash(Collider2D primaryTarget, float splashDamage)
@@ -148,7 +148,7 @@ namespace StickEvolve.Combat
             go.transform.localScale = Vector3.one * radius * 2f;
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = SpriteFactory.Circle();
-            sr.color = new Color(1f, 0.8f, 0.3f, 0.55f);
+            sr.color = new Color(ColorPalette.GoldBright.r, ColorPalette.GoldBright.g, ColorPalette.GoldBright.b, 0.55f);
             sr.sortingOrder = 4;
             var fx = go.AddComponent<ExplosionFxFade>();
             fx.lifetime = 0.25f;

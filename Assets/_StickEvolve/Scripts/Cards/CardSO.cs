@@ -1,3 +1,4 @@
+using StickEvolve.Core;
 using UnityEngine;
 
 namespace StickEvolve.Cards
@@ -39,6 +40,6 @@ namespace StickEvolve.Cards
         public float secondaryValue = 0f;
         public CardRarity rarity = CardRarity.Common;
 
-        public Color frameColor = Color.white;
+        public Color frameColor = ColorPalette.CardFrame;
     }
 }

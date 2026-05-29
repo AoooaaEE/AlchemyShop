@@ -1,4 +1,5 @@
 using System;
+using StickEvolve.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,13 +35,13 @@ namespace StickEvolve.UI
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             var bg = _panel.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.8f);
+            bg.color = ColorPalette.HudPanel;
 
             var title = MakeText(_panel.transform, "Title", "GAME OVER", 72, TextAlignmentOptions.Center, new Vector2(0f, 160f), new Vector2(800f, 100f));
-            title.color = new Color(0.95f, 0.3f, 0.3f);
+            title.color = ColorPalette.HudText;
 
             _stats = MakeText(_panel.transform, "Stats", "Достигнута волна: 0", 32, TextAlignmentOptions.Center, new Vector2(0f, 40f), new Vector2(700f, 60f));
-            _stats.color = Color.white;
+            _stats.color = ColorPalette.HudText;
 
             // Кнопка restart
             var btnGO = new GameObject("RestartBtn");
@@ -53,13 +54,13 @@ namespace StickEvolve.UI
             brt.sizeDelta = new Vector2(280f, 90f);
 
             var img = btnGO.AddComponent<Image>();
-            img.color = new Color(0.3f, 0.7f, 0.4f);
+            img.color = ColorPalette.GoldBright;
             var btn = btnGO.AddComponent<Button>();
             btn.targetGraphic = img;
             btn.onClick.AddListener(() => OnRestartClicked());
 
             var btnText = MakeText(btnGO.transform, "Label", "ПОВТОРИТЬ", 32, TextAlignmentOptions.Center, Vector2.zero, new Vector2(260f, 80f));
-            btnText.color = Color.white;
+            btnText.color = ColorPalette.HudText;
             btnText.raycastTarget = false;
 
             _panel.SetActive(false);

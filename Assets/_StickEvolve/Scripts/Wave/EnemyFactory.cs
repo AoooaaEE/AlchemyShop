@@ -55,8 +55,8 @@ namespace StickEvolve.Wave
         {
             var color = TeamColor(kind);
             var cfg = StickmanConfig.Default(color);
-            // Глаза у врагов — красные, чтобы они визуально отличались от героев.
-            cfg.eyeColor = new Color(0.95f, 0.15f, 0.15f);
+            // Глаза у врагов — используем палитру для согласованности.
+            cfg.eyeColor = ColorPalette.EnemyBody;
 
             switch (kind)
             {
@@ -85,10 +85,10 @@ namespace StickEvolve.Wave
                     cfg.bodyScale = 1f;
                     cfg.limbThickness = 0.14f;
                     cfg.hasHat = true;
-                    cfg.hatColor = new Color(0.4f, 0.15f, 0.55f);
+                    cfg.hatColor = ColorPalette.EnemyElite;
                     cfg.headSize = 0.44f;
                     cfg.hasCape = true;
-                    cfg.capeColor = new Color(0.35f, 0.10f, 0.5f);
+                    cfg.capeColor = ColorPalette.EnemyElite;
                     break;
                 case EnemyKind.Boss:
                     cfg.bodyScale = 1.7f;
@@ -99,21 +99,21 @@ namespace StickEvolve.Wave
                     cfg.legLength = 0.6f;
                     cfg.armLength = 0.7f;
                     cfg.hasHat = true;
-                    cfg.hatColor = new Color(0.25f, 0.02f, 0.02f);
+                    cfg.hatColor = ColorPalette.EnemyElite;
                     cfg.hasCape = true;
-                    cfg.capeColor = new Color(0.30f, 0.05f, 0.05f);
+                    cfg.capeColor = ColorPalette.EnemyElite;
                     cfg.handSize = 0.18f;
-                    cfg.eyeColor = new Color(1f, 0.5f, 0f);
+                    cfg.eyeColor = ColorPalette.GoldBright; 
                     break;
                 case EnemyKind.Healer:
                     cfg.bodyScale = 0.95f;
                     cfg.limbThickness = 0.13f;
                     cfg.hasHat = true;
-                    cfg.hatColor = new Color(1f, 1f, 1f);
+                    cfg.hatColor = ColorPalette.HudText;
                     cfg.headSize = 0.42f;
                     cfg.hasCape = true;
-                    cfg.capeColor = new Color(0.85f, 0.90f, 0.80f);
-                    cfg.eyeColor = new Color(0.35f, 0.85f, 0.45f);
+                    cfg.capeColor = ColorPalette.HudPanel;
+                    cfg.eyeColor = ColorPalette.BulletAlly;
                     break;
                 case EnemyKind.Shielder:
                     cfg.bodyScale = 1.1f;
@@ -122,7 +122,7 @@ namespace StickEvolve.Wave
                     cfg.headSize = 0.46f;
                     cfg.torsoHeight = 0.7f;
                     cfg.hasHat = true;
-                    cfg.hatColor = new Color(0.35f, 0.40f, 0.50f);
+                    cfg.hatColor = ColorPalette.EnemyElite;
                     break;
                 case EnemyKind.Splitter:
                     float mul = splitTier >= 2 ? 1.1f : 0.65f;
@@ -134,7 +134,7 @@ namespace StickEvolve.Wave
                     cfg.bodyScale = 0.95f;
                     cfg.limbThickness = 0.12f;
                     cfg.hasHat = true;
-                    cfg.hatColor = new Color(0.2f, 0.25f, 0.4f);
+                    cfg.hatColor = ColorPalette.EnemyElite;
                     cfg.armLength = 0.65f;
                     cfg.raiseRightArm = true;
                     break;
@@ -143,9 +143,9 @@ namespace StickEvolve.Wave
                     cfg.limbThickness = 0.18f;
                     cfg.wideShoulders = true;
                     cfg.headSize = 0.48f;
-                    cfg.bodyColor = new Color(0.95f, 0.65f, 0.2f);
-                    cfg.skinColor = new Color(0.9f, 0.6f, 0.2f);
-                    cfg.eyeColor = new Color(1f, 0.95f, 0f); // ядовито-жёлтые глаза
+                    cfg.bodyColor = ColorPalette.EnemyBody;
+                    cfg.skinColor = ColorPalette.EnemyBody;
+                    cfg.eyeColor = ColorPalette.GoldBright; // ядовито-жёлтые глаза
                     cfg.handSize = 0.14f;
                     break;
             }
@@ -162,7 +162,7 @@ namespace StickEvolve.Wave
             s.transform.localScale = new Vector3(0.85f, 0.22f, 1f);
             var sr = s.AddComponent<SpriteRenderer>();
             sr.sprite = SpriteFactory.SoftCircle();
-            sr.color = new Color(0f, 0f, 0f, 0.5f);
+            sr.color = ColorPalette.HpBarBack;
             sr.sortingOrder = 1;
         }
 
@@ -176,23 +176,23 @@ namespace StickEvolve.Wave
             sh.transform.localScale = new Vector3(0.22f, 1.1f, 1f);
             var sr = sh.AddComponent<SpriteRenderer>();
             sr.sprite = SpriteFactory.White();
-            sr.color = new Color(0.3f, 0.35f, 0.4f);
+            sr.color = ColorPalette.HudPanel;
             sr.sortingOrder = 6;
         }
 
         private static Color TeamColor(EnemyKind kind) => kind switch
         {
-            EnemyKind.Fighter  => new Color(0.85f, 0.3f, 0.3f),
-            EnemyKind.Runner   => new Color(1f, 0.55f, 0.2f),
-            EnemyKind.Tank     => new Color(0.55f, 0.25f, 0.25f),
-            EnemyKind.Mage     => new Color(0.7f, 0.35f, 0.95f),
-            EnemyKind.Boss     => new Color(0.45f, 0.08f, 0.08f),
-            EnemyKind.Healer   => new Color(0.85f, 0.95f, 0.85f),
-            EnemyKind.Shielder => new Color(0.55f, 0.55f, 0.7f),
-            EnemyKind.Splitter => new Color(0.95f, 0.45f, 0.6f),
-            EnemyKind.Sniper   => new Color(0.4f, 0.5f, 0.75f),
-            EnemyKind.Bomber   => new Color(0.95f, 0.65f, 0.2f),
-            _ => Color.red,
+            EnemyKind.Fighter  => ColorPalette.EnemyBody,
+            EnemyKind.Runner   => ColorPalette.EnemyBody,
+            EnemyKind.Tank     => ColorPalette.EnemyBody,
+            EnemyKind.Mage     => ColorPalette.EnemyElite,
+            EnemyKind.Boss     => ColorPalette.EnemyElite,
+            EnemyKind.Healer   => ColorPalette.EnemyElite,
+            EnemyKind.Shielder => ColorPalette.EnemyElite,
+            EnemyKind.Splitter => ColorPalette.EnemyBody,
+            EnemyKind.Sniper   => ColorPalette.EnemyElite,
+            EnemyKind.Bomber   => ColorPalette.EnemyBody,
+            _ => ColorPalette.EnemyBody,
         };
 
         private static void ApplyStats(Enemy e, Health hp, EnemyKind kind, WaveConfig cfg, int splitTier)
@@ -249,7 +249,7 @@ namespace StickEvolve.Wave
                     e.attackRange = 4.5f;
                     e.bulletDamage = 1.8f * cfg.enemyDamageMultiplier; // = heal amount
                     e.bulletSpeed = 7f;
-                    e.bulletColor = new Color(0.4f, 1f, 0.5f);
+                    e.bulletColor = ColorPalette.BulletAlly;
                     e.goldDrop = cfg.enemyGoldDrop * 3;
                     break;
                 case EnemyKind.Shielder:
@@ -279,7 +279,7 @@ namespace StickEvolve.Wave
                     e.attackRange = 1f;
                     e.bulletDamage = 2.8f * cfg.enemyDamageMultiplier;
                     e.bulletSpeed = 11f;
-                    e.bulletColor = new Color(0.6f, 0.7f, 1f);
+                    e.bulletColor = ColorPalette.BulletEnemy;
                     e.goldDrop = cfg.enemyGoldDrop * 3;
                     break;
                 case EnemyKind.Bomber:

@@ -16,13 +16,13 @@ namespace StickEvolve.Cards
 
         private static List<CardSO> Build()
         {
-            var grey   = new Color(0.8f, 0.8f, 0.8f);
-            var blue   = new Color(0.3f, 0.7f, 1f);
-            var purple = new Color(0.8f, 0.4f, 1f);
-            var gold   = new Color(1f, 0.85f, 0.2f);
-            var green  = new Color(0.3f, 0.9f, 0.3f);
-            var crimson = new Color(0.95f, 0.25f, 0.35f);
-            var teal   = new Color(0.3f, 0.85f, 0.85f);
+            var grey   = ColorPalette.HudPanel;
+            var blue   = ColorPalette.SkyMid;
+            var purple = ColorPalette.EnemyElite;
+            var gold   = ColorPalette.Gold;
+            var green  = ColorPalette.Gold;
+            var crimson = ColorPalette.EnemyBody;
+            var teal   = ColorPalette.SkyMid;
 
             var list = new List<CardSO>
             {
@@ -73,13 +73,13 @@ namespace StickEvolve.Cards
                 Make("gold_x2",   "Золотая жила",     "Золото ×2 за убийство",     CardEffectKind.GoldGainMult,         2.00f, 0f, CardRarity.Legendary, gold),
 
                 // — Наёмники конкретных классов (Epic/Legendary, низкий шанс) —
-                MakeHireCard("hire_archer",   "Найм: Лучник",    "+1 Лучник в отряд",     HeroClass.Archer,    CardRarity.Epic,      new Color(0.55f, 0.95f, 0.4f)),
-                MakeHireCard("hire_mage",     "Найм: Маг",        "+1 Маг в отряд",         HeroClass.Mage,      CardRarity.Epic,      new Color(0.75f, 0.5f, 1f)),
-                MakeHireCard("hire_tank",     "Найм: Танк",       "+1 Танк в отряд",        HeroClass.Tank,      CardRarity.Epic,      new Color(1f, 0.55f, 0.3f)),
-                MakeHireCard("hire_healer",   "Найм: Жрец",      "+1 Жрец-лекарь",        HeroClass.Healer,    CardRarity.Legendary, new Color(0.4f, 1f, 0.6f)),
-                MakeHireCard("hire_berserker","Найм: Берсерк",   "+1 Берсерк",             HeroClass.Berserker, CardRarity.Legendary, new Color(1f, 0.3f, 0.3f)),
-                MakeHireCard("hire_sniper",   "Найм: Снайпер",   "+1 Снайпер",             HeroClass.Sniper,    CardRarity.Legendary, new Color(0.5f, 0.6f, 0.9f)),
-                MakeHireCard("hire_ninja",    "Найм: Ниндзя",    "+1 Ниндзя",              HeroClass.Ninja,     CardRarity.Legendary, new Color(0.3f, 0.3f, 0.4f)),
+                MakeHireCard("hire_archer",   "Найм: Лучник",    "+1 Лучник в отряд",     HeroClass.Archer,    CardRarity.Epic,      ColorPalette.SkyMid),
+                MakeHireCard("hire_mage",     "Найм: Маг",        "+1 Маг в отряд",         HeroClass.Mage,      CardRarity.Epic,      ColorPalette.EnemyElite),
+                MakeHireCard("hire_tank",     "Найм: Танк",       "+1 Танк в отряд",        HeroClass.Tank,      CardRarity.Epic,      ColorPalette.GoldDark),
+                MakeHireCard("hire_healer",   "Найм: Жрец",      "+1 Жрец-лекарь",        HeroClass.Healer,    CardRarity.Legendary, ColorPalette.SkyMid),
+                MakeHireCard("hire_berserker","Найм: Берсерк",   "+1 Берсерк",             HeroClass.Berserker, CardRarity.Legendary, ColorPalette.EnemyBody),
+                MakeHireCard("hire_sniper",   "Найм: Снайпер",   "+1 Снайпер",             HeroClass.Sniper,    CardRarity.Legendary, ColorPalette.SkyMid),
+                MakeHireCard("hire_ninja",    "Найм: Ниндзя",    "+1 Ниндзя",              HeroClass.Ninja,     CardRarity.Legendary, ColorPalette.HudPanel),
             };
             return list;
         }

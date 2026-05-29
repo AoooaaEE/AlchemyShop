@@ -1,4 +1,5 @@
 using StickEvolve.Combat;
+using StickEvolve.Core;
 using UnityEngine;
 
 namespace StickEvolve.Economy
@@ -21,7 +22,7 @@ namespace StickEvolve.Economy
             go.transform.position = pos;
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = SpriteFactory.Circle(32);
-            sr.color = new Color(1f, 0.85f, 0.2f);
+            sr.color = ColorPalette.GoldDrop;
             sr.sortingOrder = 6;
             go.transform.localScale = Vector3.one * 0.25f;
             var gd = go.AddComponent<GoldDrop>();

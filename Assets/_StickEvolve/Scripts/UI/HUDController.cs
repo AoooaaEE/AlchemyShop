@@ -48,7 +48,7 @@ namespace StickEvolve.UI
             bgRT.offsetMin = Vector2.zero;
             bgRT.offsetMax = Vector2.zero;
             var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0f, 0f, 0f, 0.45f);
+            bgImg.color = ColorPalette.HudPanel;
             bgImg.raycastTarget = false;
 
             _goldText = MakeText("Gold", "GOLD: 0", 36, TextAlignmentOptions.Left);
@@ -58,7 +58,7 @@ namespace StickEvolve.UI
             goldRT.pivot = new Vector2(0f, 0.5f);
             goldRT.anchoredPosition = new Vector2(40f, 0f);
             goldRT.sizeDelta = new Vector2(400f, 60f);
-            _goldText.color = new Color(1f, 0.85f, 0.2f);
+            _goldText.color = ColorPalette.HudText;
 
             _waveText = MakeText("Wave", "WAVE 1", 40, TextAlignmentOptions.Center);
             var waveRT = _waveText.rectTransform;
@@ -67,7 +67,7 @@ namespace StickEvolve.UI
             waveRT.pivot = new Vector2(0.5f, 0.5f);
             waveRT.anchoredPosition = new Vector2(0f, 0f);
             waveRT.sizeDelta = new Vector2(400f, 60f);
-            _waveText.color = Color.white;
+            _waveText.color = ColorPalette.HudText;
 
             // HP bar (right)
             var hpFrame = new GameObject("HPFrame");
@@ -79,7 +79,7 @@ namespace StickEvolve.UI
             hpFR.anchoredPosition = new Vector2(-40f, 0f);
             hpFR.sizeDelta = new Vector2(280f, 32f);
             var frameImg = hpFrame.AddComponent<Image>();
-            frameImg.color = new Color(0.2f, 0.2f, 0.25f, 1f);
+            frameImg.color = ColorPalette.HudPanel;
             frameImg.raycastTarget = false;
 
             var fillGO = new GameObject("HPFill");
@@ -90,7 +90,7 @@ namespace StickEvolve.UI
             fillRT.offsetMin = new Vector2(2f, 2f);
             fillRT.offsetMax = new Vector2(-2f, -2f);
             _hpFill = fillGO.AddComponent<Image>();
-            _hpFill.color = new Color(0.35f, 0.85f, 0.4f);
+            _hpFill.color = ColorPalette.HpBarHigh;
             _hpFill.type = Image.Type.Filled;
             _hpFill.fillMethod = Image.FillMethod.Horizontal;
             _hpFill.fillAmount = 1f;
@@ -103,7 +103,7 @@ namespace StickEvolve.UI
             hpTRT.anchorMax = Vector2.one;
             hpTRT.offsetMin = Vector2.zero;
             hpTRT.offsetMax = Vector2.zero;
-            _hpText.color = Color.white;
+            _hpText.color = ColorPalette.HudText;
         }
 
         private TextMeshProUGUI MakeText(string label, string text, float size, TextAlignmentOptions align)
@@ -178,9 +178,7 @@ namespace StickEvolve.UI
             if (_hpFill != null)
             {
                 _hpFill.fillAmount = t;
-                _hpFill.color = t > 0.5f
-                    ? new Color(0.35f, 0.85f, 0.4f)
-                    : (t > 0.25f ? new Color(0.95f, 0.8f, 0.2f) : new Color(0.9f, 0.3f, 0.3f));
+                _hpFill.color = Color.Lerp(ColorPalette.HpBarLow, ColorPalette.HpBarHigh, t);
             }
             if (_hpText != null) _hpText.text = $"{Mathf.RoundToInt(total)} / {Mathf.RoundToInt(max)}";
         }

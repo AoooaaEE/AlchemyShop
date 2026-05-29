@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using StickEvolve.Core;
 
 namespace StickEvolve.Combat
 {
@@ -39,7 +40,7 @@ namespace StickEvolve.Combat
         public float thornsDamage;  // ответный урон врагу в ближнем бою
 
         [Header("Визуал")]
-        public Color bulletColor = new Color(0.4f, 0.8f, 1f);
+        public Color bulletColor = ColorPalette.BulletAlly;
 
         /// <summary>Глобальный спавнер клонов; задаётся бутстрапером.</summary>
         public static Func<HeroClass, Vector3, Hero> CloneSpawnerFunc;
@@ -166,7 +167,7 @@ namespace StickEvolve.Combat
             if (dist > range) return false;
             Vector2 dir = dist > 0.001f ? (Vector2)(to / dist) : Vector2.right;
             var b = Bullet.Spawn(transform.position + (Vector3)(dir * 0.4f), dir, damage, bulletSpeed,
-                CombatTeam.Heroes, new Color(0.4f, 1f, 0.5f));
+                CombatTeam.Heroes, ColorPalette.BulletAlly);
             b.isHealing = true;
             _animator?.TriggerShoot();
             return true;

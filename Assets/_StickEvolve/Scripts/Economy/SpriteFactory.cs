@@ -1,4 +1,5 @@
 using UnityEngine;
+using StickEvolve.Core;
 
 namespace StickEvolve.Economy
 {
@@ -141,9 +142,9 @@ namespace StickEvolve.Economy
                 float d = Mathf.Sqrt(dx * dx + dy * dy);
                 Color c;
                 if (d > 1f) c = new Color(0f, 0f, 0f, 0f);
-                else if (d < 0.55f) c = new Color(1f, 1f, 0.85f, 1f);          // ядро
-                else if (d < 0.75f) c = new Color(1f, 0.92f, 0.55f, 1f);       // жёлтый
-                else                c = new Color(1f, 0.85f, 0.45f, Mathf.Clamp01(1f - (d - 0.75f) / 0.25f) * 0.6f); // ореол
+                else if (d < 0.55f) c = ColorPalette.Sun;          // ядро
+                else if (d < 0.75f) c = ColorPalette.Gold;       // жёлтый / золотой
+                else                c = new Color(ColorPalette.SunHalo.r, ColorPalette.SunHalo.g, ColorPalette.SunHalo.b, Mathf.Clamp01(1f - (d - 0.75f) / 0.25f) * 0.6f); // ореол
                 px[y * size + x] = c;
             }
             tex.SetPixels(px);
@@ -198,7 +199,7 @@ namespace StickEvolve.Economy
                 Color c = new Color(0f, 0f, 0f, 0f);
                 if (y < trunkTop && Mathf.Abs(x - cx) <= trunkHalf)
                 {
-                    c = new Color(0.4f, 0.27f, 0.15f, 1f); // ствол
+                    c = ColorPalette.BeltColor; // ствол
                 }
                 else
                 {

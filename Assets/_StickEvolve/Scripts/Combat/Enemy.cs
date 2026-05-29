@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using StickEvolve.Economy;
+using StickEvolve.Core;
 using UnityEngine;
 
 namespace StickEvolve.Combat
@@ -51,7 +52,7 @@ namespace StickEvolve.Combat
         public int goldDrop = 1;
 
         [Header("Визуал")]
-        public Color bulletColor = new Color(1f, 0.4f, 0.4f);
+        public Color bulletColor = ColorPalette.BulletEnemy;
 
         public Health Health { get; private set; }
         public bool IsAlive => Health != null && Health.IsAlive;
@@ -141,7 +142,7 @@ namespace StickEvolve.Combat
             Vector2 fdir = (ally.transform.position - transform.position).normalized;
             if (fdir.sqrMagnitude < 0.001f) fdir = Vector2.left;
             var b = Bullet.Spawn(transform.position + (Vector3)(fdir * 0.4f), fdir, bulletDamage, bulletSpeed,
-                CombatTeam.Enemies, new Color(0.4f, 1f, 0.5f));
+                CombatTeam.Enemies, ColorPalette.BulletAlly);
             b.isHealing = true;
         }
 
@@ -179,14 +180,14 @@ namespace StickEvolve.Combat
                     if (dmg != null && dmg.IsAlive)
                     {
                         dmg.TakeDamage(damage, _target.transform.position);
-                        DamageNumber.Spawn(_target.transform.position, damage, new Color(1f, 0.3f, 0.3f));
+                        DamageNumber.Spawn(_target.transform.position, damage, ColorPalette.EnemyBody);
 
                         // Шипы: герой возвращает урон ближнему атакующему.
                         var hero = _target.GetComponent<Hero>();
                         if (hero != null && hero.thornsDamage > 0f && Health != null && Health.IsAlive)
                         {
                             Health.TakeDamage(hero.thornsDamage, transform.position);
-                            DamageNumber.Spawn(transform.position, hero.thornsDamage, new Color(0.6f, 0.9f, 1f));
+                            DamageNumber.Spawn(transform.position, hero.thornsDamage, ColorPalette.BulletAlly);
                         }
                     }
                     break;
@@ -208,7 +209,7 @@ namespace StickEvolve.Combat
                 var dmg = h.GetComponent<IDamageable>();
                 if (dmg == null || !dmg.IsAlive) continue;
                 dmg.TakeDamage(damage, h.transform.position);
-                DamageNumber.Spawn(h.transform.position, damage, new Color(1f, 0.5f, 0.2f));
+                DamageNumber.Spawn(h.transform.position, damage, ColorPalette.GoldBright);
             }
         }
 

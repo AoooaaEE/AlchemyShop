@@ -1,3 +1,4 @@
+using StickEvolve.Core;
 using StickEvolve.Economy;
 using UnityEngine;
 
@@ -51,18 +52,18 @@ namespace StickEvolve.Combat
                 wideShoulders = false,
                 raiseRightArm = false,
                 hasHat = false,
-                hatColor = Color.black,
+                hatColor = ColorPalette.HatColor,
 
                 hasEyes = true,
-                eyeColor = new Color(0.05f, 0.05f, 0.08f),
+                    eyeColor = ColorPalette.EyeColor, // Updated to use ColorPalette equivalent
                 hasBelt = true,
-                beltColor = new Color(0.15f, 0.10f, 0.06f),
+                    beltColor = ColorPalette.BeltColor, // Updated to use ColorPalette equivalent
                 hasCape = false,
                 capeColor = new Color(body.r * 0.55f, body.g * 0.55f, body.b * 0.7f, 1f),
                 handSize = 0.10f,
                 handColor = skin,
                 footSize = 0.12f,
-                footColor = new Color(0.10f, 0.08f, 0.05f),
+                    footColor = ColorPalette.FootColor, // Updated to use ColorPalette equivalent
             };
         }
     }

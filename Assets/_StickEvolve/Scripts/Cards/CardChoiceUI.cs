@@ -52,7 +52,7 @@ namespace StickEvolve.Cards
             rt.offsetMax = Vector2.zero;
 
             var bg = _panel.AddComponent<Image>();
-            bg.color = new Color(0f, 0f, 0f, 0.78f);
+            bg.color = ColorPalette.HudPanel;
 
             _panel.SetActive(false);
         }
@@ -66,7 +66,7 @@ namespace StickEvolve.Cards
             ClearPanelChildren();
 
             var title = MakeText(_panel.transform, "Title", "ВЫБЕРИ КАРТУ", 56, new Vector2(0f, 320f), new Vector2(900f, 80f), TextAlignmentOptions.Center);
-            title.color = Color.white;
+            title.color = ColorPalette.HudText;
 
             RebuildCards();
             BuildShopRow();
@@ -92,14 +92,14 @@ namespace StickEvolve.Cards
                 bool ok = gold >= rerollCost;
                 _rerollBtn.interactable = ok;
                 var img = _rerollBtn.targetGraphic as Image;
-                if (img != null) img.color = ok ? new Color(0.32f, 0.55f, 0.85f) : new Color(0.3f, 0.3f, 0.3f);
+                if (img != null) img.color = ok ? ColorPalette.SkyMid : ColorPalette.HudPanel;
             }
             if (_buyAllBtn != null)
             {
                 bool ok = gold >= buyAllCost && _currentOptions.Count > 0;
                 _buyAllBtn.interactable = ok;
                 var img = _buyAllBtn.targetGraphic as Image;
-                if (img != null) img.color = ok ? new Color(0.85f, 0.55f, 0.25f) : new Color(0.3f, 0.3f, 0.3f);
+                if (img != null) img.color = ok ? ColorPalette.GoldBright : ColorPalette.HudPanel;
             }
         }
 
@@ -147,16 +147,16 @@ namespace StickEvolve.Cards
             rrt.sizeDelta = new Vector2(900f, 150f);
 
             _goldLabel = MakeText(row.transform, "Gold", "GOLD: 0", 30, new Vector2(0f, 70f), new Vector2(600f, 40f), TextAlignmentOptions.Center);
-            _goldLabel.color = new Color(1f, 0.85f, 0.25f);
+            _goldLabel.color = ColorPalette.GoldBright;
 
-            _rerollBtn = MakeShopButton(row.transform, "Reroll", new Vector2(-200f, -20f), out _rerollLabel, new Color(0.32f, 0.55f, 0.85f));
+            _rerollBtn = MakeShopButton(row.transform, "Reroll", new Vector2(-200f, -20f), out _rerollLabel, ColorPalette.SkyMid);
             _rerollBtn.onClick.AddListener(() => OnRerollClicked?.Invoke());
 
-            _buyAllBtn = MakeShopButton(row.transform, "BuyAll", new Vector2(200f, -20f), out _buyAllLabel, new Color(0.85f, 0.55f, 0.25f));
+            _buyAllBtn = MakeShopButton(row.transform, "BuyAll", new Vector2(200f, -20f), out _buyAllLabel, ColorPalette.GoldBright);
             _buyAllBtn.onClick.AddListener(() => OnBuyAllClicked?.Invoke());
 
             var hint = MakeText(row.transform, "Hint", "Стрелки / W S — двигать героев", 20, new Vector2(0f, -90f), new Vector2(900f, 30f), TextAlignmentOptions.Center);
-            hint.color = new Color(0.7f, 0.7f, 0.75f);
+            hint.color = ColorPalette.HudText;
         }
 
         private Button MakeShopButton(Transform parent, string name, Vector2 pos, out TextMeshProUGUI label, Color baseColor)
@@ -175,7 +175,7 @@ namespace StickEvolve.Cards
             btn.targetGraphic = img;
 
             label = MakeText(go.transform, "Label", name, 24, Vector2.zero, new Vector2(280f, 80f), TextAlignmentOptions.Center);
-            label.color = Color.white;
+            label.color = ColorPalette.HudText;
             label.raycastTarget = false;
             return btn;
         }
@@ -202,7 +202,7 @@ namespace StickEvolve.Cards
             irt.offsetMin = new Vector2(8f, 8f);
             irt.offsetMax = new Vector2(-8f, -8f);
             var iimg = inner.AddComponent<Image>();
-            iimg.color = new Color(0.12f, 0.12f, 0.15f, 1f);
+            iimg.color = ColorPalette.HudPanel;
             iimg.raycastTarget = false;
 
             var btn = go.AddComponent<Button>();
@@ -211,13 +211,13 @@ namespace StickEvolve.Cards
             btn.onClick.AddListener(() => OnPicked(card1));
 
             var name = MakeText(go.transform, "Name", card.displayName, 28, new Vector2(0f, 130f), new Vector2(260f, 60f), TextAlignmentOptions.Center);
-            name.color = Color.white;
+            name.color = ColorPalette.HudText;
 
             var rarity = MakeText(go.transform, "Rarity", card.rarity.ToString().ToUpper(), 18, new Vector2(0f, 80f), new Vector2(260f, 30f), TextAlignmentOptions.Center);
             rarity.color = card.frameColor;
 
             var desc = MakeText(go.transform, "Desc", card.description, 22, new Vector2(0f, -80f), new Vector2(240f, 120f), TextAlignmentOptions.Center);
-            desc.color = new Color(0.9f, 0.9f, 0.9f);
+            desc.color = ColorPalette.HudText;
 
             int curLevel = CardProgression.GetLevel(card.id);
             if (curLevel > 0)
@@ -231,7 +231,7 @@ namespace StickEvolve.Cards
                 brt.anchoredPosition = new Vector2(-12f, -12f);
                 brt.sizeDelta = new Vector2(96f, 36f);
                 var bImg = badge.AddComponent<Image>();
-                bImg.color = new Color(0f, 0f, 0f, 0.55f);
+                bImg.color = ColorPalette.HudPanel;
                 bImg.raycastTarget = false;
 
                 var lvText = MakeText(badge.transform, "Lv", $"Lv {curLevel} → {curLevel + 1}", 18, Vector2.zero, new Vector2(96f, 36f), TextAlignmentOptions.Center);
@@ -240,7 +240,7 @@ namespace StickEvolve.Cards
                 lvRT.anchorMax = Vector2.one;
                 lvRT.offsetMin = Vector2.zero;
                 lvRT.offsetMax = Vector2.zero;
-                lvText.color = new Color(1f, 0.9f, 0.4f);
+                lvText.color = ColorPalette.GoldBright;
             }
             return go;
         }

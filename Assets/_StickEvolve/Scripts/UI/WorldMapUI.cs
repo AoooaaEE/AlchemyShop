@@ -22,10 +22,10 @@ namespace StickEvolve.UI
         };
         private static readonly Color[] BiomeColors =
         {
-            new Color(0.30f, 0.62f, 0.30f),
-            new Color(0.55f, 0.78f, 0.95f),
-            new Color(0.95f, 0.78f, 0.35f),
-            new Color(0.55f, 0.30f, 0.62f),
+            ColorPalette.MountainNear,
+            ColorPalette.SkyMid,
+            ColorPalette.Gold,
+            ColorPalette.EnemyElite,
         };
 
         public static WorldMapUI Create(Canvas canvas, System.Action<int> onLevelChosen, System.Action onClose)
@@ -78,7 +78,7 @@ namespace StickEvolve.UI
             bgRT.offsetMin = Vector2.zero;
             bgRT.offsetMax = Vector2.zero;
             var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0.05f, 0.07f, 0.12f, 0.95f);
+            bgImg.color = new Color(ColorPalette.HpBarBack.r, ColorPalette.HpBarBack.g, ColorPalette.HpBarBack.b, 0.95f);
             bgImg.raycastTarget = true;
 
             // Заголовок
@@ -93,7 +93,7 @@ namespace StickEvolve.UI
             var titleText = titleGO.AddComponent<TextMeshProUGUI>();
             titleText.text = "КАРТА МИРА";
             titleText.fontSize = 64;
-            titleText.color = new Color(1f, 0.9f, 0.4f);
+            titleText.color = ColorPalette.GoldBright;
             titleText.alignment = TextAlignmentOptions.Center;
             titleText.fontStyle = FontStyles.Bold;
 
@@ -107,7 +107,7 @@ namespace StickEvolve.UI
             closeRT.anchoredPosition = new Vector2(-30f, -30f);
             closeRT.sizeDelta = new Vector2(80f, 80f);
             var closeImg = closeGO.AddComponent<Image>();
-            closeImg.color = new Color(0.7f, 0.2f, 0.2f);
+            closeImg.color = ColorPalette.EnemyBody;
             var closeBtn = closeGO.AddComponent<Button>();
             closeBtn.targetGraphic = closeImg;
             closeBtn.onClick.AddListener(() =>
@@ -126,7 +126,7 @@ namespace StickEvolve.UI
             var closeText = closeTGO.AddComponent<TextMeshProUGUI>();
             closeText.text = "X";
             closeText.fontSize = 48;
-            closeText.color = Color.white;
+            closeText.color = ColorPalette.HitFlash;
             closeText.alignment = TextAlignmentOptions.Center;
             closeText.fontStyle = FontStyles.Bold;
 
@@ -139,7 +139,7 @@ namespace StickEvolve.UI
             scrollRT.offsetMin = new Vector2(40f, 60f);
             scrollRT.offsetMax = new Vector2(-40f, -140f);
             var scrollBgImg = scrollGO.AddComponent<Image>();
-            scrollBgImg.color = new Color(0f, 0f, 0f, 0.3f);
+            scrollBgImg.color = new Color(ColorPalette.HpBarBack.r, ColorPalette.HpBarBack.g, ColorPalette.HpBarBack.b, 0.3f);
             var scrollRect = scrollGO.AddComponent<ScrollRect>();
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
@@ -152,7 +152,7 @@ namespace StickEvolve.UI
             vpRT.offsetMin = Vector2.zero;
             vpRT.offsetMax = Vector2.zero;
             var vpImg = vpGO.AddComponent<Image>();
-            vpImg.color = new Color(0f, 0f, 0f, 0.01f);
+            vpImg.color = new Color(ColorPalette.HpBarBack.r, ColorPalette.HpBarBack.g, ColorPalette.HpBarBack.b, 0.01f);
             var vpMask = vpGO.AddComponent<Mask>();
             vpMask.showMaskGraphic = false;
             scrollRect.viewport = vpRT;
@@ -211,7 +211,7 @@ namespace StickEvolve.UI
             var headerText = headerTGO.AddComponent<TextMeshProUGUI>();
             headerText.text = BiomeNamesUI[biomeIdx];
             headerText.fontSize = 40;
-            headerText.color = Color.white;
+            headerText.color = ColorPalette.HudText;
             headerText.alignment = TextAlignmentOptions.Center;
             headerText.fontStyle = FontStyles.Bold;
 
@@ -247,11 +247,11 @@ namespace StickEvolve.UI
 
             var img = btnGO.AddComponent<Image>();
             if (!unlocked)
-                img.color = new Color(0.25f, 0.25f, 0.30f);
+                img.color = ColorPalette.HudPanel;
             else if (completed)
-                img.color = new Color(0.30f, 0.65f, 0.35f);
+                img.color = ColorPalette.GoldBright;
             else
-                img.color = new Color(0.95f, 0.75f, 0.20f);
+                img.color = ColorPalette.GoldBright;
 
             var btn = btnGO.AddComponent<Button>();
             btn.targetGraphic = img;
@@ -278,7 +278,7 @@ namespace StickEvolve.UI
             var numText = numGO.AddComponent<TextMeshProUGUI>();
             numText.text = levelNumber.ToString();
             numText.fontSize = 48;
-            numText.color = unlocked ? Color.white : new Color(0.5f, 0.5f, 0.55f);
+            numText.color = unlocked ? ColorPalette.HitFlash : ColorPalette.HudPanel;
             numText.alignment = TextAlignmentOptions.Center;
             numText.fontStyle = FontStyles.Bold;
 
@@ -302,7 +302,7 @@ namespace StickEvolve.UI
             }
             starsText.text = starsLine;
             starsText.fontSize = 30;
-            starsText.color = new Color(1f, 0.95f, 0.4f);
+            starsText.color = ColorPalette.GoldBright;
             starsText.alignment = TextAlignmentOptions.Center;
         }
     }

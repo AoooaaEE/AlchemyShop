@@ -55,7 +55,7 @@ namespace StickEvolve.UI
             bgRT.offsetMin = Vector2.zero;
             bgRT.offsetMax = Vector2.zero;
             var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0f, 0f, 0f, 0.75f);
+            bgImg.color = new Color(ColorPalette.HpBarBack.r, ColorPalette.HpBarBack.g, ColorPalette.HpBarBack.b, 0.75f);
             bgImg.raycastTarget = true;
 
             // Заголовок
@@ -69,7 +69,7 @@ namespace StickEvolve.UI
             _titleText = titleGO.AddComponent<TextMeshProUGUI>();
             _titleText.text = "УРОВЕНЬ ПРОЙДЕН";
             _titleText.fontSize = 84;
-            _titleText.color = new Color(1f, 0.85f, 0.2f);
+            _titleText.color = ColorPalette.GoldBright;
             _titleText.alignment = TextAlignmentOptions.Center;
             _titleText.fontStyle = FontStyles.Bold;
 
@@ -84,7 +84,7 @@ namespace StickEvolve.UI
             _starsText = starsGO.AddComponent<TextMeshProUGUI>();
             _starsText.text = "";
             _starsText.fontSize = 90;
-            _starsText.color = new Color(1f, 0.95f, 0.4f);
+            _starsText.color = ColorPalette.GoldBright;
             _starsText.alignment = TextAlignmentOptions.Center;
 
             // Награда
@@ -98,7 +98,7 @@ namespace StickEvolve.UI
             _rewardText = rewardGO.AddComponent<TextMeshProUGUI>();
             _rewardText.text = "";
             _rewardText.fontSize = 42;
-            _rewardText.color = Color.white;
+            _rewardText.color = ColorPalette.HudText;
             _rewardText.alignment = TextAlignmentOptions.Center;
 
             // Кнопка Next
@@ -111,7 +111,7 @@ namespace StickEvolve.UI
             btnRT.anchoredPosition = new Vector2(-240f, 0f);
             btnRT.sizeDelta = new Vector2(420f, 110f);
             var btnImg = btnGO.AddComponent<Image>();
-            btnImg.color = new Color(0.25f, 0.7f, 0.35f);
+            btnImg.color = ColorPalette.GoldBright;
             var btn = btnGO.AddComponent<Button>();
             btn.targetGraphic = btnImg;
             btn.onClick.AddListener(() =>
@@ -130,7 +130,7 @@ namespace StickEvolve.UI
             _nextBtnText = btnTGO.AddComponent<TextMeshProUGUI>();
             _nextBtnText.text = "СЛЕД. УРОВЕНЬ";
             _nextBtnText.fontSize = 36;
-            _nextBtnText.color = Color.white;
+            _nextBtnText.color = ColorPalette.HitFlash;
             _nextBtnText.alignment = TextAlignmentOptions.Center;
             _nextBtnText.fontStyle = FontStyles.Bold;
 
@@ -144,7 +144,7 @@ namespace StickEvolve.UI
             mapRT.anchoredPosition = new Vector2(240f, 0f);
             mapRT.sizeDelta = new Vector2(420f, 110f);
             var mapImg = mapGO.AddComponent<Image>();
-            mapImg.color = new Color(0.30f, 0.45f, 0.85f);
+            mapImg.color = ColorPalette.SkyMid;
             var mapBtn = mapGO.AddComponent<Button>();
             mapBtn.targetGraphic = mapImg;
             mapBtn.onClick.AddListener(() =>
@@ -163,7 +163,7 @@ namespace StickEvolve.UI
             var mapText = mapTGO.AddComponent<TextMeshProUGUI>();
             mapText.text = "К КАРТЕ";
             mapText.fontSize = 36;
-            mapText.color = Color.white;
+            mapText.color = ColorPalette.HitFlash;
             mapText.alignment = TextAlignmentOptions.Center;
             mapText.fontStyle = FontStyles.Bold;
         }
@@ -185,7 +185,7 @@ namespace StickEvolve.UI
             if (isCampaignDone)
             {
                 _titleText.text = "ИГРА ПРОЙДЕНА!";
-                _titleText.color = new Color(1f, 0.5f, 0.2f);
+                _titleText.color = ColorPalette.GoldBright;
                 _rewardText.text = $"Все 40 уровней пройдены.\nЗолота за уровень: {goldEarned}";
                 _nextBtnText.text = "ЗАНОВО";
             }
@@ -193,14 +193,14 @@ namespace StickEvolve.UI
             {
                 var nextDef = CampaignBuilder.Build(nextLevel);
                 _titleText.text = "БИОМ ПРОЙДЕН!";
-                _titleText.color = new Color(1f, 0.85f, 0.2f);
+                _titleText.color = ColorPalette.GoldBright;
                 _rewardText.text = $"Босс повержен! Далее: {nextDef.biomeName}\nЗолота: {goldEarned}";
                 _nextBtnText.text = "В " + nextDef.biomeName.ToUpper();
             }
             else
             {
                 _titleText.text = "УРОВЕНЬ ПРОЙДЕН";
-                _titleText.color = new Color(1f, 0.85f, 0.2f);
+                _titleText.color = ColorPalette.GoldBright;
                 _rewardText.text = $"Уровень {justCompletedLevel} завершён\nЗолота: {goldEarned}";
                 _nextBtnText.text = "СЛЕД. УРОВЕНЬ";
             }
