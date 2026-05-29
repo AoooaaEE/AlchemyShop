@@ -1,4 +1,5 @@
 using StickEvolve.Economy;
+using StickEvolve.Core;
 using UnityEngine;
 
 namespace StickEvolve.Combat

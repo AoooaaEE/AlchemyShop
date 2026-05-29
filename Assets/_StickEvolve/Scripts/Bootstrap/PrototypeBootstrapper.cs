@@ -29,6 +29,7 @@ namespace StickEvolve.Bootstrap
         }
 
         [SerializeField] private float heroMoveSpeed = 4.5f;
+        [SerializeField] private Sprite backgroundSprite;
 
         private StickGame _game;
         private WaveSpawner _spawner;
@@ -113,161 +114,80 @@ namespace StickEvolve.Bootstrap
             _enemyX = halfWidth + 1f;
         }
 
+        private static Sprite _battleOverlaySprite;
+
         private void BuildBackground()
         {
-            // Камера тоже подкрасим, чтобы за границами sprite-неба тон совпадал.
             if (_cam != null) _cam.backgroundColor = ColorPalette.SkyMid;
 
-            // — Небо: широкий градиент из 5 слоёв (день, ярко-голубой → тёплый горизонт) —
-            var skyColors = new[]
+            if (backgroundSprite != null)
             {
-                ColorPalette.SkyTop,
-                ColorPalette.SkyMid,
-                ColorPalette.SkyMid,
-                ColorPalette.SkyMid,
-                ColorPalette.SkyHorizon,
+                var bgGO = new GameObject("BackgroundImage");
+                var bgSR = bgGO.AddComponent<SpriteRenderer>();
+                bgSR.sprite = backgroundSprite;
+                bgSR.sortingOrder = -1000;
+                bgGO.transform.position = new Vector3(0f, 0f, 0f);
+
+                float camHeight = _cam.orthographicSize * 2f;
+                float camWidth = camHeight * _cam.aspect;
+                float spriteWidth = backgroundSprite.bounds.size.x;
+                float spriteHeight = backgroundSprite.bounds.size.y;
+                float cover = Mathf.Max(camWidth / spriteWidth, camHeight / spriteHeight);
+                bgGO.transform.localScale = new Vector3(cover, cover, 1f);
+
+                CreateBottomBattleOverlay(camWidth, 2.8f);
+                return;
+            }
+
+            // Если спрайт не задан, оставляем только камеру и аналогичную цветовую подложку.
+            var fallback = new GameObject("BackgroundFallback");
+            var fallbackSR = fallback.AddComponent<SpriteRenderer>();
+            fallbackSR.sprite = SpriteFactory.White();
+            fallbackSR.color = ColorPalette.SkyMid;
+            fallbackSR.sortingOrder = -1000;
+            fallback.transform.position = new Vector3(0f, 0f, 0f);
+            fallback.transform.localScale = new Vector3(40f, _cam.orthographicSize * 2f / 1f, 1f);
+
+            CreateBottomBattleOverlay(_cam.orthographicSize * 2f * _cam.aspect, 2.8f);
+        }
+
+        private void CreateBottomBattleOverlay(float width, float height)
+        {
+            var overlay = new GameObject("BackgroundBattleOverlay");
+            var sr = overlay.AddComponent<SpriteRenderer>();
+            sr.sprite = GetBattleOverlaySprite();
+            sr.sortingOrder = -950;
+            overlay.transform.position = new Vector3(0f, -_cam.orthographicSize, 0f);
+            overlay.transform.localScale = new Vector3(width / sr.sprite.bounds.size.x, height / sr.sprite.bounds.size.y, 1f);
+        }
+
+        private static Sprite GetBattleOverlaySprite()
+        {
+            if (_battleOverlaySprite != null) return _battleOverlaySprite;
+
+            const int texWidth = 16;
+            const int texHeight = 128;
+            var tex = new Texture2D(texWidth, texHeight, TextureFormat.ARGB32, false, true)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                hideFlags = HideFlags.DontSave,
             };
-            float skyTop = 5.5f;
-            float skyBottom = -1.0f;
-            float bandH = (skyTop - skyBottom) / skyColors.Length;
-            for (int i = 0; i < skyColors.Length; i++)
+
+            for (int y = 0; y < texHeight; y++)
             {
-                var band = new GameObject($"Sky_{i}");
-                var sr = band.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.White();
-                sr.color = skyColors[i];
-                sr.sortingOrder = -60 + i;
-                band.transform.position = new Vector3(0f, skyTop - bandH * (i + 0.5f), 0f);
-                band.transform.localScale = new Vector3(40f, bandH + 0.05f, 1f);
+                float t = (float)y / (texHeight - 1);
+                var color = new Color(0.02f, 0.06f, 0.18f, Mathf.Lerp(0.72f, 0f, t));
+                for (int x = 0; x < texWidth; x++)
+                {
+                    tex.SetPixel(x, y, color);
+                }
             }
+            tex.Apply();
 
-            // — Солнце в правой верхней четверти (с ореолом). Слегка покачивается за счёт ParallaxDrift скоростью 0. —
-            var sun = new GameObject("Sun");
-            var sunSR = sun.AddComponent<SpriteRenderer>();
-            sunSR.sprite = SpriteFactory.Sun();
-            sunSR.color = ColorPalette.Sun;
-            sunSR.sortingOrder = -45;
-            sun.transform.position = new Vector3(4.5f, 3.6f, 0f);
-            sun.transform.localScale = Vector3.one * 2.4f;
-
-            // Внешний мягкий ореол вокруг солнца
-            var sunHalo = new GameObject("SunHalo");
-            var haloSR = sunHalo.AddComponent<SpriteRenderer>();
-            haloSR.sprite = SpriteFactory.SoftCircle();
-            haloSR.color = new Color(ColorPalette.SunHalo.r, ColorPalette.SunHalo.g, ColorPalette.SunHalo.b, 0.35f);
-            haloSR.sortingOrder = -46;
-            sunHalo.transform.position = new Vector3(4.5f, 3.6f, 0f);
-            sunHalo.transform.localScale = Vector3.one * 5.5f;
-
-            // — Облака (мягкие кружки), дрейфуют влево; разная высота и скорость —
-            for (int i = 0; i < 6; i++)
-            {
-                var c = new GameObject($"Cloud_{i}");
-                var sr = c.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.SoftCircle();
-                sr.color = new Color(ColorPalette.Cloud.r, ColorPalette.Cloud.g, ColorPalette.Cloud.b, Random.Range(0.25f, 0.55f));
-                sr.sortingOrder = -30 - (i % 2); // часть впереди, часть позади
-                c.transform.position = new Vector3(Random.Range(-9f, 9f), Random.Range(1.8f, 4.5f), 0f);
-                c.transform.localScale = new Vector3(Random.Range(2.5f, 4.2f), Random.Range(1.0f, 1.6f), 1f);
-                var drift = c.AddComponent<ParallaxDrift>();
-                drift.speed = Random.Range(0.05f, 0.20f);
-                drift.resetX = 12f;
-                drift.wrapX = -12f;
-            }
-
-            // — Дальние горы (голубоватые, нижний контур горизонта) —
-            for (int i = 0; i < 7; i++)
-            {
-                var m = new GameObject($"MountainFar_{i}");
-                var sr = m.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.Triangle();
-                sr.color = ColorPalette.MountainFar;
-                sr.sortingOrder = -25;
-                m.transform.position = new Vector3(-10f + i * 3.0f + Random.Range(-0.4f, 0.4f), -1.6f, 0f);
-                m.transform.localScale = new Vector3(Random.Range(3.0f, 4.5f), Random.Range(1.8f, 2.4f), 1f);
-            }
-
-            // — Ближние горы (более тёмный голубой) —
-            for (int i = 0; i < 5; i++)
-            {
-                var m = new GameObject($"MountainNear_{i}");
-                var sr = m.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.Triangle();
-                sr.color = ColorPalette.MountainNear;
-                sr.sortingOrder = -23;
-                m.transform.position = new Vector3(-10f + i * 4.0f + Random.Range(-0.4f, 0.4f), -1.85f, 0f);
-                m.transform.localScale = new Vector3(Random.Range(4f, 6f), Random.Range(2.3f, 3.2f), 1f);
-            }
-
-            // — Лес: ёлки за линией горизонта (дальний слой, средне-зелёные) —
-            for (int i = 0; i < 14; i++)
-            {
-                var t = new GameObject($"TreeFar_{i}");
-                var sr = t.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.PineTree();
-                sr.color = ColorPalette.Ground;
-                sr.sortingOrder = -18;
-                t.transform.position = new Vector3(-10f + i * 1.45f + Random.Range(-0.3f, 0.3f), -1.55f, 0f);
-                float h = Random.Range(0.7f, 1.1f);
-                t.transform.localScale = new Vector3(h * 0.7f, h, 1f);
-            }
-
-            // — Земля: основная полоса + верхний травяной слой —
-            var ground = new GameObject("Ground");
-            var groundSR = ground.AddComponent<SpriteRenderer>();
-            groundSR.sprite = SpriteFactory.White();
-            groundSR.color = ColorPalette.Ground;
-            groundSR.sortingOrder = -10;
-            ground.transform.position = new Vector3(0f, -3.5f, 0f);
-            ground.transform.localScale = new Vector3(40f, 4.5f, 1f);
-
-            var grass = new GameObject("Grass");
-            var grassSR = grass.AddComponent<SpriteRenderer>();
-            grassSR.sprite = SpriteFactory.White();
-            grassSR.color = ColorPalette.Ground;
-            grassSR.sortingOrder = -9;
-            grass.transform.position = new Vector3(0f, -1.45f, 0f);
-            grass.transform.localScale = new Vector3(40f, 0.22f, 1f);
-
-            // Тонкая золотая линия по верхней кромке земли
-            var groundLine = new GameObject("GroundLine");
-            var glsr = groundLine.AddComponent<SpriteRenderer>();
-            glsr.sprite = SpriteFactory.White();
-            glsr.color = ColorPalette.GroundLine;
-            glsr.sortingOrder = -8;
-            groundLine.transform.position = new Vector3(0f, -1.35f, 0f);
-            groundLine.transform.localScale = new Vector3(40f, 0.05f, 1f);
-
-            // — Кустики травы перед игроком —
-            for (int i = 0; i < 22; i++)
-            {
-                var t = new GameObject($"GrassTuft_{i}");
-                var sr = t.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.Triangle();
-                sr.color = ColorPalette.Ground;
-                sr.sortingOrder = -8;
-                t.transform.position = new Vector3(-10f + i * 1.0f + Random.Range(-0.3f, 0.3f), -1.40f, 0f);
-                t.transform.localScale = new Vector3(Random.Range(0.18f, 0.30f), Random.Range(0.18f, 0.35f), 1f);
-            }
-
-            // — Цветочки (точки) на травянном слое —
-            var flowerColors = new[]
-            {
-                ColorPalette.GoldBright,  // жёлтый -> золотой
-                ColorPalette.EnemyBody,   // розовый -> багровый (акцент)
-                ColorPalette.EnemyElite,  // фиолетовый -> сине-стальной
-                ColorPalette.HitFlash,    // белый -> нейтральный всплеск
-            };
-            for (int i = 0; i < 24; i++)
-            {
-                var f = new GameObject($"Flower_{i}");
-                var sr = f.AddComponent<SpriteRenderer>();
-                sr.sprite = SpriteFactory.Circle();
-                sr.color = flowerColors[Random.Range(0, flowerColors.Length)];
-                sr.sortingOrder = -7;
-                f.transform.position = new Vector3(-10f + i * 0.9f + Random.Range(-0.3f, 0.3f), -1.43f + Random.Range(-0.04f, 0.04f), 0f);
-                f.transform.localScale = Vector3.one * Random.Range(0.06f, 0.11f);
-            }
+            _battleOverlaySprite = Sprite.Create(tex, new Rect(0f, 0f, texWidth, texHeight), new Vector2(0.5f, 0f), texHeight / 2f);
+            _battleOverlaySprite.name = "BattleOverlayGradient";
+            return _battleOverlaySprite;
         }
 
         private void BuildCanvas()

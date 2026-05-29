@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using StickEvolve.Combat;
+using StickEvolve.Core;
 using UnityEngine;
 
 namespace StickEvolve.Cards

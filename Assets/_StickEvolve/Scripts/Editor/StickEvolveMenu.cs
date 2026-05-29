@@ -14,6 +14,7 @@ namespace StickEvolve.EditorTools
     public static class StickEvolveMenu
     {
         private const string ScenePath = "Assets/_StickEvolve/Scenes/Prototype.unity";
+        private const string BackgroundSpritePath = "Assets/_StickEvolve/Art/lucid-origin_2D_game_background_hand-painted_painterly_style_enchanted_forest_battle_stage_si-0 (1).jpg";
 
         [MenuItem("StickEvolve/Create Prototype Scene", priority = 1)]
         public static void CreatePrototypeScene()
@@ -35,7 +36,8 @@ namespace StickEvolve.EditorTools
             scene.name = "Prototype";
 
             var bootstrapGO = new GameObject("_StickEvolveBootstrap");
-            bootstrapGO.AddComponent<PrototypeBootstrapper>();
+            var bootstrap = bootstrapGO.AddComponent<PrototypeBootstrapper>();
+            AssignBackgroundSprite(bootstrap);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             Debug.Log($"[StickEvolve] Создана сцена: {ScenePath}. Нажми Play.");
@@ -57,10 +59,25 @@ namespace StickEvolve.EditorTools
             }
 
             var go = new GameObject("_StickEvolveBootstrap");
-            go.AddComponent<PrototypeBootstrapper>();
+            var bootstrap = go.AddComponent<PrototypeBootstrapper>();
+            AssignBackgroundSprite(bootstrap);
             Selection.activeGameObject = go;
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[StickEvolve] PrototypeBootstrapper добавлен в текущую сцену.");
+        }
+
+        private static void AssignBackgroundSprite(PrototypeBootstrapper bootstrap)
+        {
+            if (bootstrap == null) return;
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(BackgroundSpritePath);
+            if (sprite != null)
+            {
+                bootstrap.GetType().GetField("backgroundSprite", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(bootstrap, sprite);
+            }
+            else
+            {
+                Debug.LogWarning($"[StickEvolve] Не найден фон по пути: {BackgroundSpritePath}");
+            }
         }
 
         [MenuItem("StickEvolve/Delete Save File", priority = 20)]
