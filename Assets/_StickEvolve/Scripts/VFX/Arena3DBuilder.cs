@@ -13,6 +13,7 @@ namespace StickEvolve.VFX
         {
             BuildSky(arenaRoot, halfWidth, halfHeight);
             BuildFloor(arenaRoot, halfWidth, halfHeight);
+            BuildCompositionShapes(arenaRoot, halfWidth, halfHeight);
             BuildMagicCircle(arenaRoot);
             BuildWalls(arenaRoot, halfWidth, halfHeight);
             BuildDecorativeTrim(arenaRoot, halfWidth, halfHeight);
@@ -21,10 +22,10 @@ namespace StickEvolve.VFX
             BuildAmbientGlowSpots(arenaRoot, halfWidth, halfHeight);
 
             // Парящие угольки над ареной (две группы — тёплые и холодные).
-            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.8f, halfHeight * 1.8f),
-                new Color(1f, 0.55f, 0.18f), count: 28);
-            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.8f, halfHeight * 1.8f),
-                new Color(0.45f, 0.55f, 1.0f), count: 14);
+            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.55f, halfHeight * 1.45f),
+                new Color(1f, 0.55f, 0.18f), count: 10);
+            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.55f, halfHeight * 1.45f),
+                new Color(0.45f, 0.55f, 1.0f), count: 5);
         }
 
         private static void BuildFloor(Transform arenaRoot, float halfWidth, float halfHeight)
@@ -35,8 +36,8 @@ namespace StickEvolve.VFX
             var fc = floor.GetComponent<Collider>(); if (fc != null) Object.Destroy(fc);
             floor.transform.SetParent(arenaRoot, worldPositionStays: false);
             floor.transform.localPosition = new Vector3(0f, 0f, -0.015f);
-            floor.transform.localScale = new Vector3(halfWidth * 2.6f, halfHeight * 2.6f, 1f);
-            floor.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(new Color(0.08f, 0.07f, 0.09f));
+            floor.transform.localScale = new Vector3(halfWidth * 2.35f, halfHeight * 2.25f, 1f);
+            floor.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(new Color(0.16f, 0.12f, 0.13f));
 
             // Плитка: сетка квадов с лёгкой вариацией цвета и швами.
             const float tile = 0.9f;
@@ -46,10 +47,10 @@ namespace StickEvolve.VFX
             float startY = -halfHeight + tile * 0.5f;
             var tileColors = new Color[]
             {
-                new Color(0.18f, 0.16f, 0.20f),
-                new Color(0.15f, 0.14f, 0.18f),
-                new Color(0.21f, 0.18f, 0.22f),
-                new Color(0.13f, 0.12f, 0.16f),
+                new Color(0.24f, 0.18f, 0.17f),
+                new Color(0.20f, 0.15f, 0.16f),
+                new Color(0.28f, 0.20f, 0.18f),
+                new Color(0.17f, 0.13f, 0.15f),
             };
             var tilesRoot = new GameObject("FloorTiles");
             tilesRoot.transform.SetParent(arenaRoot, worldPositionStays: false);
@@ -74,6 +75,29 @@ namespace StickEvolve.VFX
             BuildFloorCracks(arenaRoot);
         }
 
+        private static void BuildCompositionShapes(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            // Большая читаемая форма в центре: вместо пустой чёрной коробки кадр получает
+            // «боевую дорожку» с тёплой Hades-like палитрой. Это не влияет на коллайдеры.
+            var runner = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            runner.name = "CentralCombatRunner";
+            var runnerCol = runner.GetComponent<Collider>(); if (runnerCol != null) Object.Destroy(runnerCol);
+            runner.transform.SetParent(arenaRoot, worldPositionStays: false);
+            runner.transform.localPosition = new Vector3(0f, 0f, 0.016f);
+            runner.transform.localScale = new Vector3(halfWidth * 1.45f, halfHeight * 1.55f, 1f);
+            runner.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(new Color(0.26f, 0.13f, 0.13f));
+
+            Color bronze = new Color(0.72f, 0.42f, 0.18f);
+            Character3DBuilder.MakeCube(arenaRoot, "RunnerTrimN", bronze,
+                new Vector3(0f, halfHeight * 0.74f, 0.04f), new Vector3(halfWidth * 1.35f, 0.05f, 0.035f));
+            Character3DBuilder.MakeCube(arenaRoot, "RunnerTrimS", bronze,
+                new Vector3(0f, -halfHeight * 0.74f, 0.04f), new Vector3(halfWidth * 1.35f, 0.05f, 0.035f));
+            Character3DBuilder.MakeCube(arenaRoot, "RunnerTrimE", bronze,
+                new Vector3(halfWidth * 0.70f, 0f, 0.04f), new Vector3(0.05f, halfHeight * 1.45f, 0.035f));
+            Character3DBuilder.MakeCube(arenaRoot, "RunnerTrimW", bronze,
+                new Vector3(-halfWidth * 0.70f, 0f, 0.04f), new Vector3(0.05f, halfHeight * 1.45f, 0.035f));
+        }
+
         private static void BuildFloorCracks(Transform arenaRoot)
         {
             void Crack(string name, Vector2 a, Vector2 b, Color c, float width, float emit)
@@ -90,11 +114,10 @@ namespace StickEvolve.VFX
 
             Color lava = new Color(1.0f, 0.28f, 0.08f);
             Color arcane = new Color(0.35f, 0.80f, 1.0f);
-            Crack("LavaCrack_A", new Vector2(-3.6f, -3.8f), new Vector2(-1.9f, -2.1f), lava, 0.045f, 1.7f);
-            Crack("LavaCrack_B", new Vector2(-1.9f, -2.1f), new Vector2(-0.9f, -2.6f), lava, 0.035f, 1.4f);
-            Crack("LavaCrack_C", new Vector2(2.9f, 3.5f), new Vector2(1.7f, 2.2f), lava, 0.04f, 1.5f);
-            Crack("ArcaneCrack_A", new Vector2(-3.2f, 3.0f), new Vector2(-1.4f, 1.9f), arcane, 0.035f, 1.3f);
-            Crack("ArcaneCrack_B", new Vector2(1.0f, -3.0f), new Vector2(3.3f, -4.2f), arcane, 0.035f, 1.3f);
+            Crack("LavaCrack_A", new Vector2(-3.4f, -3.5f), new Vector2(-2.1f, -2.3f), lava, 0.035f, 0.9f);
+            Crack("LavaCrack_B", new Vector2(-2.1f, -2.3f), new Vector2(-1.0f, -2.8f), lava, 0.028f, 0.8f);
+            Crack("LavaCrack_C", new Vector2(2.9f, 3.4f), new Vector2(1.8f, 2.3f), lava, 0.03f, 0.8f);
+            Crack("ArcaneCrack_A", new Vector2(-3.1f, 3.0f), new Vector2(-1.6f, 2.0f), arcane, 0.026f, 0.75f);
         }
 
         private static void BuildMagicCircle(Transform arenaRoot)
@@ -102,7 +125,7 @@ namespace StickEvolve.VFX
             // Магический круг в центре — несколько концентрических квадов с разным цветом/прозрачностью.
             void Ring(float radius, float thickness, Color c, float emit)
             {
-                int segments = 28;
+                int segments = 20;
                 for (int i = 0; i < segments; i++)
                 {
                     float a = i * Mathf.PI * 2f / segments;
@@ -117,8 +140,8 @@ namespace StickEvolve.VFX
                     seg.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.GetEmissive(c, emit);
                 }
             }
-            Ring(2.0f, 0.06f, new Color(0.45f, 0.65f, 1.0f), 1.4f);
-            Ring(1.5f, 0.04f, new Color(0.75f, 0.55f, 1.0f), 1.2f);
+            Ring(1.35f, 0.045f, new Color(0.45f, 0.65f, 1.0f), 0.65f);
+            Ring(0.95f, 0.035f, new Color(0.95f, 0.55f, 0.22f), 0.55f);
 
             // 6 «руны»-точек вокруг внутреннего круга.
             for (int i = 0; i < 6; i++)
@@ -128,11 +151,11 @@ namespace StickEvolve.VFX
                 rune.name = "Rune";
                 var col = rune.GetComponent<Collider>(); if (col != null) Object.Destroy(col);
                 rune.transform.SetParent(arenaRoot, worldPositionStays: false);
-                rune.transform.localPosition = new Vector3(Mathf.Cos(a) * 1.75f, Mathf.Sin(a) * 1.75f, 0.013f);
+                rune.transform.localPosition = new Vector3(Mathf.Cos(a) * 1.15f, Mathf.Sin(a) * 1.15f, 0.013f);
                 rune.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Rad2Deg * a + 45f);
-                rune.transform.localScale = new Vector3(0.18f, 0.18f, 0.02f);
+                rune.transform.localScale = new Vector3(0.14f, 0.14f, 0.02f);
                 rune.GetComponent<MeshRenderer>().sharedMaterial =
-                    LitMaterial.GetEmissive(new Color(0.5f, 0.85f, 1.0f), 1.6f);
+                    LitMaterial.GetEmissive(new Color(0.95f, 0.62f, 0.25f), 0.9f);
             }
         }
 
@@ -156,14 +179,14 @@ namespace StickEvolve.VFX
                 new Vector3(wallT, h, wallH));
 
             // Подсветочные «рейки» вдоль низа стен — тонкие эмиссивные полоски.
-            var stripColor = new Color(0.55f, 0.40f, 1.0f);
-            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripN", stripColor, stripColor, 1.4f,
+            var stripColor = new Color(0.95f, 0.50f, 0.20f);
+            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripN", stripColor, stripColor, 0.55f,
                 new Vector3(0f,  halfHeight + 0.02f, 0.08f), new Vector3(w * 0.95f, 0.05f, 0.05f));
-            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripS", stripColor, stripColor, 1.4f,
+            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripS", stripColor, stripColor, 0.55f,
                 new Vector3(0f, -halfHeight - 0.02f, 0.08f), new Vector3(w * 0.95f, 0.05f, 0.05f));
-            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripE", stripColor, stripColor, 1.4f,
+            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripE", stripColor, stripColor, 0.55f,
                 new Vector3( halfWidth + 0.02f, 0f, 0.08f), new Vector3(0.05f, h * 0.95f, 0.05f));
-            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripW", stripColor, stripColor, 1.4f,
+            Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripW", stripColor, stripColor, 0.55f,
                 new Vector3(-halfWidth - 0.02f, 0f, 0.08f), new Vector3(0.05f, h * 0.95f, 0.05f));
         }
 
@@ -266,14 +289,12 @@ namespace StickEvolve.VFX
                 q.transform.localPosition = new Vector3(x, y, 0.018f);
                 q.transform.localScale = new Vector3(s, s, 1f);
                 var mr = q.GetComponent<MeshRenderer>();
-                mr.sharedMaterial = LitMaterial.GetEmissive(c, 0.6f);
+                mr.sharedMaterial = LitMaterial.GetEmissive(c, 0.25f);
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 mr.receiveShadows = false;
             }
-            GlowSpot( halfWidth * 0.55f,  halfHeight * 0.55f, new Color(0.95f, 0.45f, 0.12f), 2.5f);
-            GlowSpot(-halfWidth * 0.55f,  halfHeight * 0.55f, new Color(0.95f, 0.45f, 0.12f), 2.5f);
-            GlowSpot( halfWidth * 0.55f, -halfHeight * 0.55f, new Color(0.40f, 0.30f, 0.95f), 2.3f);
-            GlowSpot(-halfWidth * 0.55f, -halfHeight * 0.55f, new Color(0.40f, 0.30f, 0.95f), 2.3f);
+            GlowSpot( halfWidth * 0.55f,  halfHeight * 0.55f, new Color(0.95f, 0.45f, 0.12f), 1.8f);
+            GlowSpot(-halfWidth * 0.55f, -halfHeight * 0.55f, new Color(0.40f, 0.30f, 0.95f), 1.6f);
         }
 
         private static void BuildSky(Transform arenaRoot, float halfWidth, float halfHeight)
@@ -366,14 +387,15 @@ namespace StickEvolve.VFX
         {
             if (cam == null) return;
             cam.orthographic = false;
-            cam.fieldOfView = 48f;
+            cam.fieldOfView = 42f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.05f, 0.04f, 0.10f);
-            // Ближе и уже FOV: арена и персонажи выглядят крупнее и «премиальнее», без ощущения пустой коробки.
-            cam.transform.position = new Vector3(0f, -8.7f, 7.2f);
-            cam.transform.LookAt(new Vector3(0f, 0.9f, 0.9f), Vector3.up);
+            cam.backgroundColor = new Color(0.09f, 0.055f, 0.08f);
+            // Ближе и уже FOV: персонажи становятся главным объектом кадра,
+            // а арена перестаёт выглядеть как пустая неоновая коробка.
+            cam.transform.position = new Vector3(0f, -6.8f, 5.6f);
+            cam.transform.LookAt(new Vector3(0f, 0.35f, 0.85f), Vector3.up);
         }
     }
 }

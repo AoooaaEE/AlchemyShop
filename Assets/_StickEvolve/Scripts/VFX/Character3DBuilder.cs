@@ -34,12 +34,12 @@ namespace StickEvolve.VFX
 
             // Базовые размеры. Локальная ось Z = «вверх» (после поворота родителя).
             // Чуть увеличиваем только визуал (коллайдеры/геймплей не трогаем), чтобы персонажи читались с 3D-камеры.
-            float bs = (cfg.bodyScale <= 0f ? 1f : cfg.bodyScale) * 1.35f;
-            float legH = 0.55f * bs;          // высота ноги
-            float torsoH = 0.70f * bs;        // высота торса
-            float headR = 0.22f * bs;         // радиус головы
-            float shoulderW = (cfg.wideShoulders ? 0.55f : 0.42f) * bs;
-            float armLen = 0.55f * bs;
+            float bs = (cfg.bodyScale <= 0f ? 1f : cfg.bodyScale) * 1.70f;
+            float legH = 0.48f * bs;          // высота ноги — короче, чтобы силуэт был chunky, не stickman
+            float torsoH = 0.78f * bs;        // высота торса
+            float headR = 0.27f * bs;         // крупная голова читается с дальней камеры
+            float shoulderW = (cfg.wideShoulders ? 0.72f : 0.56f) * bs;
+            float armLen = 0.50f * bs;
 
             float hipZ = legH;                 // верх ног
             float torsoCenterZ = hipZ + torsoH * 0.5f;
@@ -47,49 +47,50 @@ namespace StickEvolve.VFX
             float headCenterZ = hipZ + torsoH + headR;
 
             // — Ноги —
-            float hipHalf = 0.10f * bs;
+            float hipHalf = 0.14f * bs;
             MakeCube(visual.transform, "LegL", cfg.bodyColor,
                 new Vector3(-hipHalf, 0f, legH * 0.5f),
-                new Vector3(0.16f * bs, 0.16f * bs, legH));
+                new Vector3(0.22f * bs, 0.22f * bs, legH));
             MakeCube(visual.transform, "LegR", cfg.bodyColor,
                 new Vector3(hipHalf, 0f, legH * 0.5f),
-                new Vector3(0.16f * bs, 0.16f * bs, legH));
+                new Vector3(0.22f * bs, 0.22f * bs, legH));
 
             // — Сапоги —
             var bootColor = new Color(0.08f, 0.06f, 0.04f);
             MakeCube(visual.transform, "BootL", bootColor,
                 new Vector3(-hipHalf, 0.02f, 0.05f),
-                new Vector3(0.20f * bs, 0.24f * bs, 0.10f));
+                new Vector3(0.30f * bs, 0.34f * bs, 0.12f));
             MakeCube(visual.transform, "BootR", bootColor,
                 new Vector3(hipHalf, 0.02f, 0.05f),
-                new Vector3(0.20f * bs, 0.24f * bs, 0.10f));
+                new Vector3(0.30f * bs, 0.34f * bs, 0.12f));
 
             // — Торс —
             MakeCube(visual.transform, "Torso", cfg.bodyColor,
                 new Vector3(0f, 0f, torsoCenterZ),
-                new Vector3(shoulderW, 0.28f * bs, torsoH));
+                new Vector3(shoulderW, 0.42f * bs, torsoH));
 
             // — Ремень + читаемый class/faction sigil на груди —
             MakeCube(visual.transform, "Belt", new Color(0.18f, 0.12f, 0.06f),
                 new Vector3(0f, 0f, hipZ + torsoH * 0.18f),
-                new Vector3(shoulderW * 1.05f, 0.30f * bs, 0.10f));
+                new Vector3(shoulderW * 1.08f, 0.46f * bs, 0.12f));
             Color sigil = cfg.isHero ? new Color(0.25f, 0.85f, 1.0f) : new Color(1.0f, 0.22f, 0.14f);
             MakeCubeEmissive(visual.transform, "ChestSigil", sigil, sigil, 1.4f,
-                new Vector3(0f, -0.145f * bs, torsoCenterZ + 0.10f * bs),
-                new Vector3(0.18f * bs, 0.035f * bs, 0.16f * bs));
+                new Vector3(0f, -0.215f * bs, torsoCenterZ + 0.10f * bs),
+                new Vector3(0.24f * bs, 0.045f * bs, 0.20f * bs));
             if (cfg.isHero)
             {
-                MakeCubeEmissive(visual.transform, "HeroBackBanner", new Color(0.08f, 0.18f, 0.30f), new Color(0.20f, 0.75f, 1f), 0.5f,
-                    new Vector3(0f, 0.22f * bs, torsoCenterZ + 0.10f * bs),
-                    new Vector3(0.08f * bs, 0.035f * bs, torsoH * 0.85f));
+                Color capelet = cfg.hasCape ? cfg.capeColor : new Color(0.10f, 0.20f, 0.32f);
+                MakeCube(visual.transform, "HeroCapelet", capelet,
+                    new Vector3(0f, 0.27f * bs, torsoCenterZ + 0.02f * bs),
+                    new Vector3(shoulderW * 0.88f, 0.055f * bs, torsoH * 0.72f));
             }
 
             // — Плащ (сзади торса по локальной Y) —
             if (cfg.hasCape)
             {
                 MakeCube(visual.transform, "Cape", cfg.capeColor,
-                    new Vector3(0f, 0.18f * bs, torsoCenterZ + 0.05f),
-                    new Vector3(shoulderW * 0.95f, 0.05f, torsoH * 1.05f));
+                    new Vector3(0f, 0.30f * bs, torsoCenterZ - 0.02f * bs),
+                    new Vector3(shoulderW * 1.05f, 0.07f * bs, torsoH * 1.00f));
             }
 
             // — Голова —
@@ -102,7 +103,7 @@ namespace StickEvolve.VFX
             {
                 MakeCube(visual.transform, "Helmet", new Color(0.18f, 0.16f, 0.18f),
                     new Vector3(0f, 0f, headCenterZ + headR * 0.55f),
-                    new Vector3(headR * 2.1f, headR * 2.1f, headR * 0.55f));
+                    new Vector3(headR * 2.2f, headR * 2.0f, headR * 0.55f));
             }
             if (!cfg.isHero)
             {
@@ -121,10 +122,10 @@ namespace StickEvolve.VFX
             Color eyeColor = cfg.isHero ? new Color(0.6f, 0.9f, 1.0f) : new Color(1.0f, 0.25f, 0.20f);
             MakeSphereEmissive(visual.transform, "EyeL", eyeColor, 2.0f,
                 new Vector3(-headR * 0.4f, -headR * 0.85f, headCenterZ + headR * 0.10f),
-                Vector3.one * (headR * 0.35f));
+                Vector3.one * (headR * 0.42f));
             MakeSphereEmissive(visual.transform, "EyeR", eyeColor, 2.0f,
                 new Vector3(headR * 0.4f, -headR * 0.85f, headCenterZ + headR * 0.10f),
-                Vector3.one * (headR * 0.35f));
+                Vector3.one * (headR * 0.42f));
 
             // — Руки —
             float shoulderHalf = shoulderW * 0.5f + 0.05f;
@@ -136,18 +137,18 @@ namespace StickEvolve.VFX
                 Mathf.Clamp01(cfg.bodyColor.b * 1.3f + 0.05f));
             MakeCube(visual.transform, "PauldronL", pauldron,
                 new Vector3(-shoulderHalf, 0f, shoulderZ + 0.05f),
-                new Vector3(0.24f * bs, 0.22f * bs, 0.14f));
+                new Vector3(0.34f * bs, 0.30f * bs, 0.18f));
             MakeCube(visual.transform, "PauldronR", pauldron,
                 new Vector3(shoulderHalf, 0f, shoulderZ + 0.05f),
-                new Vector3(0.24f * bs, 0.22f * bs, 0.14f));
+                new Vector3(0.34f * bs, 0.30f * bs, 0.18f));
             // Левая рука — опущена.
             MakeCube(visual.transform, "ArmL", cfg.bodyColor,
                 new Vector3(-shoulderHalf, 0f, shoulderZ - armLen * 0.5f),
-                new Vector3(0.16f * bs, 0.16f * bs, armLen));
+                new Vector3(0.22f * bs, 0.22f * bs, armLen));
             // Правая рука — слегка вперёд, держит оружие.
             var armR = MakeCube(visual.transform, "ArmR", cfg.bodyColor,
                 new Vector3(shoulderHalf, -0.15f * bs, shoulderZ - armLen * 0.4f),
-                new Vector3(0.16f * bs, 0.16f * bs, armLen));
+                new Vector3(0.22f * bs, 0.22f * bs, armLen));
 
             // — Оружие в правой руке —
             if (cfg.weapon != Weapon.None)
@@ -157,6 +158,7 @@ namespace StickEvolve.VFX
                 // У правой руки кисть находится примерно тут:
                 Vector3 handPos = new Vector3(shoulderHalf, -0.30f * bs, shoulderZ - armLen);
                 weapon.transform.localPosition = handPos;
+                weapon.transform.localScale = Vector3.one * Mathf.Clamp(bs * 0.78f, 0.95f, 1.45f);
                 BuildWeapon(weapon.transform, cfg.weapon, cfg.bodyColor);
             }
 
@@ -221,11 +223,11 @@ namespace StickEvolve.VFX
             // Локальный +Z = мировой +Y (вверх). Хотим лежащий на полу диск.
             glow.transform.localRotation = Quaternion.Euler(0f, 0f, 0f); // плоскость XY = лежит как нужно
             glow.transform.localPosition = new Vector3(0f, 0f, 0.02f);
-            glow.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
+            glow.transform.localScale = new Vector3(1.15f, 1.15f, 1f);
             var mr = glow.GetComponent<MeshRenderer>();
             var mat = LitMaterial.Get(isHero
-                ? new Color(Mathf.Min(1f, tint.r + 0.4f), Mathf.Min(1f, tint.g + 0.3f), Mathf.Min(1f, tint.b + 0.05f), 0.55f)
-                : new Color(0.85f, 0.10f, 0.15f, 0.45f), transparent: true);
+                ? new Color(Mathf.Min(1f, tint.r + 0.35f), Mathf.Min(1f, tint.g + 0.25f), Mathf.Min(1f, tint.b + 0.05f), 0.32f)
+                : new Color(0.85f, 0.10f, 0.15f, 0.28f), transparent: true);
             mr.sharedMaterial = mat;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
