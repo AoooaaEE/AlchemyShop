@@ -12,6 +12,7 @@ namespace StickEvolve.VFX
         private static CameraShaker _instance;
 
         private Vector3 _origin;
+        private Quaternion _originRot = Quaternion.identity;
         private bool _originCaptured;
         private float _trauma;       // 0..1
         private float _decayPerSec = 1.5f;
@@ -54,14 +55,15 @@ namespace StickEvolve.VFX
             if (!_originCaptured)
             {
                 _origin = transform.localPosition;
+                _originRot = transform.localRotation;
                 _originCaptured = true;
             }
 
             if (_trauma <= 0f)
             {
-                // Не трогаем localPosition каждый кадр когда нет шейка — но если кто-то двигает камеру кодом, обновим origin.
+                // Не трогаем камеру каждый кадр когда нет шейка — но если кто-то двигает её кодом, обновим origin.
                 _origin = transform.localPosition;
-                transform.localRotation = Quaternion.identity;
+                _originRot = transform.localRotation;
                 return;
             }
 
@@ -71,13 +73,13 @@ namespace StickEvolve.VFX
             float oy = (Mathf.PerlinNoise(_noiseSeedY, t) * 2f - 1f) * _maxOffset * shake;
             float oa = (Mathf.PerlinNoise(_noiseSeedR, t) * 2f - 1f) * _maxAngleDeg * shake;
             transform.localPosition = _origin + new Vector3(ox, oy, 0f);
-            transform.localRotation = Quaternion.Euler(0f, 0f, oa);
+            transform.localRotation = _originRot * Quaternion.Euler(0f, 0f, oa);
 
             _trauma = Mathf.Max(0f, _trauma - _decayPerSec * Time.unscaledDeltaTime);
             if (_trauma <= 0f)
             {
                 transform.localPosition = _origin;
-                transform.localRotation = Quaternion.identity;
+                transform.localRotation = _originRot;
             }
         }
     }
