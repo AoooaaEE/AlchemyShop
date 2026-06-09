@@ -6,7 +6,7 @@ namespace StickEvolve.EditorTools
 {
     public class BackgroundSpriteImporter : AssetPostprocessor
     {
-        private const string BackgroundSpritePath = "Assets/_StickEvolve/Art/lucid-origin_2D_game_background_hand-painted_painterly_style_enchanted_forest_battle_stage_si-0 (1).jpg";
+        private const string BackgroundSpritePath = "Assets/_StickEvolve/Resources/Art/forest_bg.png";
 
         private void OnPreprocessTexture()
         {

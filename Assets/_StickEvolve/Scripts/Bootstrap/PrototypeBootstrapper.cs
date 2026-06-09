@@ -29,7 +29,6 @@ namespace StickEvolve.Bootstrap
         }
 
         [SerializeField] private float heroMoveSpeed = 4.5f;
-        [SerializeField] private Sprite backgroundSprite;
 
         private StickGame _game;
         private WaveSpawner _spawner;
@@ -120,18 +119,30 @@ namespace StickEvolve.Bootstrap
         {
             if (_cam != null) _cam.backgroundColor = ColorPalette.SkyMid;
 
-            if (backgroundSprite != null)
+            var sp = Resources.Load<Sprite>("Art/forest_bg");
+            if (sp == null)
+            {
+                var tex = Resources.Load<Texture2D>("Art/forest_bg");
+                if (tex != null)
+                {
+                    sp = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                }
+            }
+
+            Debug.Log("BG load: sprite=" + (sp != null) + ", tex=" + (Resources.Load<Texture2D>("Art/forest_bg") != null));
+
+            if (sp != null)
             {
                 var bgGO = new GameObject("BackgroundImage");
                 var bgSR = bgGO.AddComponent<SpriteRenderer>();
-                bgSR.sprite = backgroundSprite;
+                bgSR.sprite = sp;
                 bgSR.sortingOrder = -1000;
                 bgGO.transform.position = new Vector3(0f, 0f, 0f);
 
                 float camHeight = _cam.orthographicSize * 2f;
                 float camWidth = camHeight * _cam.aspect;
-                float spriteWidth = backgroundSprite.bounds.size.x;
-                float spriteHeight = backgroundSprite.bounds.size.y;
+                float spriteWidth = sp.bounds.size.x;
+                float spriteHeight = sp.bounds.size.y;
                 float cover = Mathf.Max(camWidth / spriteWidth, camHeight / spriteHeight);
                 bgGO.transform.localScale = new Vector3(cover, cover, 1f);
 
@@ -139,7 +150,7 @@ namespace StickEvolve.Bootstrap
                 return;
             }
 
-            // Если спрайт не задан, оставляем только камеру и аналогичную цветовую подложку.
+            Debug.LogError("BG load failed: Resources/Art/forest_bg not found");
             var fallback = new GameObject("BackgroundFallback");
             var fallbackSR = fallback.AddComponent<SpriteRenderer>();
             fallbackSR.sprite = SpriteFactory.White();
