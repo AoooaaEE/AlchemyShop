@@ -386,16 +386,16 @@ namespace StickEvolve.VFX
         public static void ConfigureCamera(Camera cam, float halfWidth, float halfHeight)
         {
             if (cam == null) return;
-            cam.orthographic = false;
-            cam.fieldOfView = 42f;
+            // V4: ортографическая 2.5D/isometric камера. Перспектива делала персонажей справа
+            // гигантскими роботами и ломала читаемость кадра.
+            cam.orthographic = true;
+            cam.orthographicSize = 6.6f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.09f, 0.055f, 0.08f);
-            // Ближе и уже FOV: персонажи становятся главным объектом кадра,
-            // а арена перестаёт выглядеть как пустая неоновая коробка.
-            cam.transform.position = new Vector3(0f, -6.8f, 5.6f);
-            cam.transform.LookAt(new Vector3(0f, 0.35f, 0.85f), Vector3.up);
+            cam.transform.position = new Vector3(0f, -8.5f, 7.4f);
+            cam.transform.LookAt(new Vector3(0f, 0f, 0.65f), Vector3.up);
         }
     }
 }

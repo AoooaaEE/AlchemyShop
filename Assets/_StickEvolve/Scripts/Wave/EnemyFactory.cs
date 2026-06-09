@@ -120,8 +120,25 @@ namespace StickEvolve.Wave
                 bodyScale    = scale,
                 weapon       = w,
                 isHero       = false,
+                modelResourcePath = ImportedModelForKind(kind),
+                modelScale   = kind == EnemyKind.Boss ? 0.78f : 0.66f,
             });
         }
+
+        private static string ImportedModelForKind(EnemyKind kind) => kind switch
+        {
+            EnemyKind.Fighter  => "Models/Characters/RogueHooded",
+            EnemyKind.Runner   => "Models/Characters/Rogue",
+            EnemyKind.Tank     => "Models/Characters/Barbarian",
+            EnemyKind.Mage     => "Models/Characters/Mage",
+            EnemyKind.Boss     => "Models/Characters/Barbarian",
+            EnemyKind.Healer   => "Models/Characters/Mage",
+            EnemyKind.Shielder => "Models/Characters/Knight",
+            EnemyKind.Splitter => "Models/Characters/Rogue",
+            EnemyKind.Sniper   => "Models/Characters/RogueHooded",
+            EnemyKind.Bomber   => "Models/Characters/Barbarian",
+            _ => "Models/Characters/RogueHooded",
+        };
 
         private static FantasyOutfit.Weapon WeaponForKind(EnemyKind kind) => kind switch
         {

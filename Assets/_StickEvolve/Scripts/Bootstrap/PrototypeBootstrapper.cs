@@ -549,6 +549,8 @@ namespace StickEvolve.Bootstrap
                     bodyScale    = s.bodyScale,
                     weapon       = Weapon3DForHero(cls),
                     isHero       = true,
+                    modelResourcePath = ImportedModelForHero(cls),
+                    modelScale   = 0.72f,
                 });
 
                 var col3 = go.AddComponent<CapsuleCollider2D>();
@@ -644,6 +646,19 @@ namespace StickEvolve.Bootstrap
             HeroClass.Healer    => StickEvolve.VFX.Character3DBuilder.Weapon.Staff,
             HeroClass.Ninja     => StickEvolve.VFX.Character3DBuilder.Weapon.Dagger,
             _ => StickEvolve.VFX.Character3DBuilder.Weapon.Sword,
+        };
+
+        private static string ImportedModelForHero(HeroClass cls) => cls switch
+        {
+            HeroClass.Warrior   => "Models/Characters/Knight",
+            HeroClass.Tank      => "Models/Characters/Knight",
+            HeroClass.Berserker => "Models/Characters/Barbarian",
+            HeroClass.Archer    => "Models/Characters/Rogue",
+            HeroClass.Sniper    => "Models/Characters/RogueHooded",
+            HeroClass.Mage      => "Models/Characters/Mage",
+            HeroClass.Healer    => "Models/Characters/Mage",
+            HeroClass.Ninja     => "Models/Characters/RogueHooded",
+            _ => "Models/Characters/Knight",
         };
 
         private static StickEvolve.VFX.FantasyOutfit.Weapon WeaponForHero(HeroClass cls) => cls switch

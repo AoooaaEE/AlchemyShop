@@ -24,6 +24,8 @@ namespace StickEvolve.VFX
             public float bodyScale;
             public Weapon weapon;
             public bool isHero;
+            public string modelResourcePath;
+            public float modelScale;
         }
 
         public static GameObject Build(GameObject root, Config cfg)
@@ -31,6 +33,16 @@ namespace StickEvolve.VFX
             // Контейнер «Visual», куда складываем всю меш-иерархию. Дочерний к root.
             var visual = new GameObject("Visual3D");
             visual.transform.SetParent(root.transform, worldPositionStays: false);
+
+            // V4 style reset: сначала пробуем реальные low-poly GLB модели из Resources.
+            // Если ассет не загрузится в Unity, ниже останется старый процедурный fallback,
+            // но нормальный путь больше не показывает кубо-роботов.
+            if (TryBuildImportedModel(visual.transform, cfg))
+            {
+                AddGroundGlow(visual.transform, cfg.bodyColor, cfg.isHero);
+                visual.AddComponent<Character3DAnimator>();
+                return visual;
+            }
 
             // Базовые размеры. Локальная ось Z = «вверх» (после поворота родителя).
             // Чуть увеличиваем только визуал (коллайдеры/геймплей не трогаем), чтобы персонажи читались с 3D-камеры.
@@ -169,6 +181,45 @@ namespace StickEvolve.VFX
             visual.AddComponent<Character3DAnimator>();
 
             return visual;
+        }
+
+        private static bool TryBuildImportedModel(Transform visual, Config cfg)
+        {
+            if (string.IsNullOrEmpty(cfg.modelResourcePath)) return false;
+            var prefab = Resources.Load<GameObject>(cfg.modelResourcePath);
+            if (prefab == null) return false;
+
+            var model = Object.Instantiate(prefab, visual, false);
+            model.name = "ImportedModel";
+            // GLB-модели стандартно Y-up, а наш 3D-геймплей живёт в XY, высота = Z.
+            // Rx=90 переводит локальную высоту модели в Z. Доп. разворот нужен, чтобы лицо смотрело в -Y.
+            model.transform.localRotation = Quaternion.Euler(90f, 0f, cfg.isHero ? 180f : 0f);
+            float s = cfg.modelScale > 0f ? cfg.modelScale : 1f;
+            s *= Mathf.Clamp(cfg.bodyScale <= 0f ? 1f : cfg.bodyScale, 0.65f, 1.55f);
+            model.transform.localScale = Vector3.one * s;
+            model.transform.localPosition = Vector3.zero;
+
+            // Убираем случайные коллайдеры с импортированных ассетов: физика остаётся на root CapsuleCollider2D.
+            var colliders = model.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+                if (colliders[i] != null) Object.Destroy(colliders[i]);
+
+            // Командный маркер читаемости без превращения модели в робота.
+            Color marker = cfg.isHero ? new Color(0.20f, 0.85f, 1.0f) : new Color(1.0f, 0.20f, 0.12f);
+            MakeCubeEmissive(visual, cfg.isHero ? "HeroTeamMarker" : "EnemyTeamMarker", marker, marker, cfg.isHero ? 0.55f : 0.75f,
+                new Vector3(0f, -0.22f, 1.15f), new Vector3(0.28f, 0.035f, 0.10f));
+
+            // Небольшое оружие/магический предмет оставляем как gameplay-readability, но уже не как тело персонажа.
+            if (cfg.weapon != Weapon.None)
+            {
+                var weapon = new GameObject("Weapon");
+                weapon.transform.SetParent(visual, worldPositionStays: false);
+                weapon.transform.localPosition = new Vector3(0.34f, -0.36f, 0.82f);
+                weapon.transform.localRotation = Quaternion.Euler(12f, 0f, -18f);
+                weapon.transform.localScale = Vector3.one * 0.72f;
+                BuildWeapon(weapon.transform, cfg.weapon, cfg.bodyColor);
+            }
+            return true;
         }
 
         private static void BuildWeapon(Transform parent, Weapon w, Color tint)
