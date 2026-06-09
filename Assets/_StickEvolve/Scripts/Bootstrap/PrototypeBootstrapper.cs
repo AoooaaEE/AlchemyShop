@@ -22,6 +22,26 @@ namespace StickEvolve.Bootstrap
         [SerializeField] private int wavesToPlay = 100;
         [SerializeField] private float heroMoveSpeed = 4.5f;
 
+        [Header("Топ-даун арена")]
+        [Tooltip("Если включено — лидер управляется ввода, остальные следуют за ним, враги спавнятся со всех сторон.")]
+        [SerializeField] private bool topDownArena = true;
+        [Tooltip("Полуразмер арены по X. Левая/правая стена.")]
+        [SerializeField] private float arenaHalfWidth = 8.5f;
+        [Tooltip("Полуразмер арены по Y. Верх/низ.")]
+        [SerializeField] private float arenaHalfHeight = 3.2f;
+        [Tooltip("Расстояние, на котором companions держатся от лидера.")]
+        [SerializeField] private float companionRadius = 1.2f;
+
+        [Header("Фон-картинка")]
+        [Tooltip("Если включено — рисуем художественный фон-картинку вместо процедурного неба/гор/деревьев.")]
+        [SerializeField] private bool useImageBackground = true;
+        [Tooltip("Путь к спрайту фона относительно любой папки Resources (без расширения).")]
+        [SerializeField] private string imageBackgroundResourcePath = "Backgrounds/fantasy_forest_bg";
+        [Tooltip("Сдвиг фона по вертикали в мировых координатах.")]
+        [SerializeField] private float imageBackgroundYOffset = 0f;
+        [Tooltip("Запас по cover-fit (1.0 = впритык по краю камеры).")]
+        [SerializeField] private float imageBackgroundPadding = 1.02f;
+
         private StickGame _game;
         private WaveSpawner _spawner;
         private HUDController _hud;
@@ -97,13 +117,31 @@ namespace StickEvolve.Bootstrap
         {
             float halfHeight = _cam.orthographicSize;
             float halfWidth = halfHeight * Mathf.Max(_cam.aspect, 0.5f);
-            // Hero внутри левого края, спавн врагов чуть за правым краем
-            _heroX = -halfWidth + 1.5f;
-            _enemyX = halfWidth + 1f;
+            if (topDownArena)
+            {
+                // Лидер стартует в центре арены, враги спавнятся по краям.
+                _heroX = 0f;
+                _enemyX = halfWidth + 1f;
+                // Подгоняем рамку арены к камере, оставляя небольшой запас.
+                arenaHalfWidth = Mathf.Max(2f, halfWidth - 0.8f);
+                arenaHalfHeight = Mathf.Max(2f, halfHeight - 0.8f);
+            }
+            else
+            {
+                _heroX = -halfWidth + 1.5f;
+                _enemyX = halfWidth + 1f;
+            }
         }
 
         private void BuildBackground()
         {
+            // 1) Если включён режим картинки — пытаемся загрузить спрайт и выходим, не строя процедурку.
+            if (useImageBackground && TryBuildImageBackground())
+            {
+                if (_cam != null) _cam.backgroundColor = new Color(0.04f, 0.03f, 0.06f);
+                return;
+            }
+
             // Камера тоже подкрасим, чтобы за границами sprite-неба тон совпадал.
             if (_cam != null) _cam.backgroundColor = new Color(0.55f, 0.80f, 0.98f);
 
@@ -249,6 +287,39 @@ namespace StickEvolve.Bootstrap
             }
         }
 
+        /// <summary>
+        /// Пытается загрузить художественный фон-картинку из Resources и положить её на сцену.
+        /// Возвращает true, если получилось — в этом случае процедурный фон не строится.
+        /// </summary>
+        private bool TryBuildImageBackground()
+        {
+            if (string.IsNullOrEmpty(imageBackgroundResourcePath)) return false;
+            var sprite = Resources.Load<Sprite>(imageBackgroundResourcePath);
+            if (sprite == null)
+            {
+                Debug.LogWarning($"[Bootstrapper] Image background sprite not found at Resources/{imageBackgroundResourcePath}");
+                return false;
+            }
+
+            var bgGO = new GameObject("Background_Image");
+            var sr = bgGO.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = -100;
+
+            float camHalfHeight = (_cam != null) ? _cam.orthographicSize : 5.5f;
+            float camHalfWidth = camHalfHeight * Mathf.Max(_cam != null ? _cam.aspect : 1f, 0.5f);
+            float spriteHalfWidth = sprite.bounds.extents.x;
+            float spriteHalfHeight = sprite.bounds.extents.y;
+            if (spriteHalfWidth <= 0f || spriteHalfHeight <= 0f) return false;
+
+            float requiredHalfHeight = camHalfHeight + Mathf.Abs(imageBackgroundYOffset);
+            float scale = Mathf.Max(camHalfWidth / spriteHalfWidth, requiredHalfHeight / spriteHalfHeight)
+                          * Mathf.Max(imageBackgroundPadding, 1f);
+            bgGO.transform.position = new Vector3(0f, imageBackgroundYOffset, 0f);
+            bgGO.transform.localScale = new Vector3(scale, scale, 1f);
+            return true;
+        }
+
         private void BuildCanvas()
         {
             var canvasGO = new GameObject("UICanvas");
@@ -282,6 +353,9 @@ namespace StickEvolve.Bootstrap
             _spawner.spawnX = _enemyX;
             _spawner.spawnYMin = -_cam.orthographicSize * 0.5f;
             _spawner.spawnYMax = _cam.orthographicSize * 0.5f;
+            _spawner.topDownEdgeSpawn = topDownArena;
+            _spawner.arenaHalfWidth = arenaHalfWidth;
+            _spawner.arenaHalfHeight = arenaHalfHeight;
             _spawner.Reset(BuildWaves());
             _spawner.OnWaveStarted += (n) => _game.NotifyWaveStarted(n);
             _spawner.OnWaveCompleted += OnWaveCompleted;
@@ -514,6 +588,9 @@ namespace StickEvolve.Bootstrap
             if (_cardUI != null && _cardUI.IsOpen) return;
             if (_game != null && _game.IsGameOver) return;
 
+            if (topDownArena) { TickTopDown(); return; }
+
+            // Legacy: только вертикальное движение всех героев одновременно.
             float vert = 0f;
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) vert += 1f;
             if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) vert -= 1f;
@@ -529,6 +606,65 @@ namespace StickEvolve.Bootstrap
                 var p = h.transform.position;
                 p.y = Mathf.Clamp(p.y + dy, -halfH, halfH);
                 h.transform.position = p;
+            }
+        }
+
+        /// <summary>
+        /// Top-down тик: лидер двигается ввода, остальные тянутся за ним кольцом.
+        /// Лидер — первый ЖИВОЙ герой в списке, чтобы при смерти управление перешло другому.
+        /// </summary>
+        private void TickTopDown()
+        {
+            Hero leader = null;
+            for (int i = 0; i < _heroes.Count; i++)
+            {
+                var h = _heroes[i];
+                if (h == null || !h.gameObject.activeSelf) continue;
+                var hp = h.GetComponent<Health>();
+                if (hp == null || !hp.IsAlive) continue;
+                leader = h;
+                break;
+            }
+            if (leader == null) return;
+
+            // 1) Лидер на ввод
+            Vector2 input = Player.PlayerInput.Movement;
+            float dt = Time.deltaTime;
+            Vector3 leaderPos = leader.transform.position;
+            if (input.sqrMagnitude > 0.0001f)
+            {
+                leaderPos += (Vector3)(input * (heroMoveSpeed * dt));
+            }
+            leaderPos.x = Mathf.Clamp(leaderPos.x, -arenaHalfWidth, arenaHalfWidth);
+            leaderPos.y = Mathf.Clamp(leaderPos.y, -arenaHalfHeight, arenaHalfHeight);
+            leader.transform.position = leaderPos;
+
+            // 2) Компаньоны: тянутся к точке-«слоту» вокруг лидера.
+            // Слоты раскладываются по кольцу: первый позади-слева, дальше по часовой.
+            int compIdx = 0;
+            float companionSpeed = heroMoveSpeed * 0.95f;
+            for (int i = 0; i < _heroes.Count; i++)
+            {
+                var h = _heroes[i];
+                if (h == null || !h.gameObject.activeSelf) continue;
+                if (h == leader) continue;
+                var hp = h.GetComponent<Health>();
+                if (hp == null || !hp.IsAlive) { compIdx++; continue; }
+
+                float angle = (compIdx * 137.508f + 200f) * Mathf.Deg2Rad; // золотой угол для равномерности
+                float radius = companionRadius + (compIdx / 6) * 0.6f;
+                Vector3 slot = leaderPos + new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius * 0.7f, 0f);
+                Vector3 toSlot = slot - h.transform.position;
+                float dist = toSlot.magnitude;
+                if (dist > 0.05f)
+                {
+                    Vector3 step = (toSlot / dist) * Mathf.Min(dist, companionSpeed * dt);
+                    Vector3 np = h.transform.position + step;
+                    np.x = Mathf.Clamp(np.x, -arenaHalfWidth, arenaHalfWidth);
+                    np.y = Mathf.Clamp(np.y, -arenaHalfHeight, arenaHalfHeight);
+                    h.transform.position = np;
+                }
+                compIdx++;
             }
         }
 

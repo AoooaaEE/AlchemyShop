@@ -115,8 +115,10 @@ namespace StickEvolve.Combat
             var ally = FindMostInjuredAlly();
             if (ally == null)
             {
-                // Никого нет рядом — медленно идёт влево, как обычный враг.
-                transform.position += Vector3.left * (moveSpeed * Time.deltaTime);
+                // Никого нет рядом — медленно дрейфует к центру арены.
+                Vector3 toCenter = (Vector3.zero - transform.position);
+                if (toCenter.sqrMagnitude > 0.001f) toCenter.Normalize();
+                transform.position += toCenter * (moveSpeed * Time.deltaTime);
                 return;
             }
 

@@ -17,6 +17,13 @@ namespace StickEvolve.Wave
         public float spawnYMin = -2.5f;
         public float spawnYMax = 2.5f;
 
+        [Header("Топ-даун арена")]
+        [Tooltip("Если включено — враги спавнятся в случайной точке на одной из 4 сторон арены, а не только справа.")]
+        public bool topDownEdgeSpawn = true;
+        public float arenaHalfWidth = 8.5f;
+        public float arenaHalfHeight = 4.5f;
+        public float arenaSpawnMargin = 0.6f;   // насколько глубоко за край рамки
+
         public List<WaveConfig> waves = new();
         public int CurrentWaveIndex { get; private set; }
         public WaveConfig CurrentWave => (CurrentWaveIndex >= 0 && CurrentWaveIndex < waves.Count) ? waves[CurrentWaveIndex] : null;
@@ -80,8 +87,28 @@ namespace StickEvolve.Wave
 
         private void SpawnOne(EnemyKind kind, WaveConfig cfg)
         {
-            float y = UnityEngine.Random.Range(spawnYMin, spawnYMax);
-            Vector3 pos = new Vector3(spawnX, y, 0f);
+            Vector3 pos;
+            if (topDownEdgeSpawn)
+            {
+                // Случайная точка на одной из 4 сторон арены, чуть за её краем.
+                int side = UnityEngine.Random.Range(0, 4);
+                float xIn = UnityEngine.Random.Range(-arenaHalfWidth, arenaHalfWidth);
+                float yIn = UnityEngine.Random.Range(-arenaHalfHeight, arenaHalfHeight);
+                float xOut = arenaHalfWidth + arenaSpawnMargin;
+                float yOut = arenaHalfHeight + arenaSpawnMargin;
+                pos = side switch
+                {
+                    0 => new Vector3(+xOut, yIn, 0f),  // справа
+                    1 => new Vector3(-xOut, yIn, 0f),  // слева
+                    2 => new Vector3(xIn, +yOut, 0f),  // сверху
+                    _ => new Vector3(xIn, -yOut, 0f),  // снизу
+                };
+            }
+            else
+            {
+                float y = UnityEngine.Random.Range(spawnYMin, spawnYMax);
+                pos = new Vector3(spawnX, y, 0f);
+            }
             EnemyFactory.Spawn(kind, pos, cfg);
         }
 
