@@ -289,7 +289,7 @@ namespace StickEvolve.VFX
 
         public static Material GetEmissive(Color color, float intensity)
         {
-            int key = ColorKey(color, transparent: false) ^ 0x7FFF0000 ^ Mathf.RoundToInt(intensity * 100f);
+            int key = ColorKey(color, tr: false) ^ 0x7FFF0000 ^ Mathf.RoundToInt(intensity * 100f);
             if (_cache.TryGetValue(key, out var m) && m != null) return m;
             var mat = new Material(GetShader());
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
