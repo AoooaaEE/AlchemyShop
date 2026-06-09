@@ -94,16 +94,29 @@ namespace StickEvolve.VFX
                     new Vector3(headR * 2.1f, headR * 2.1f, headR * 0.55f));
             }
 
-            // — Глаза (две тёмные точки на передней стороне головы, -Y) —
-            MakeSphere(visual.transform, "EyeL", new Color(0.04f, 0.04f, 0.06f),
+            // — Глаза (эмиссивные точки на передней стороне головы, -Y) —
+            Color eyeColor = cfg.isHero ? new Color(0.6f, 0.9f, 1.0f) : new Color(1.0f, 0.25f, 0.20f);
+            MakeSphereEmissive(visual.transform, "EyeL", eyeColor, 2.0f,
                 new Vector3(-headR * 0.4f, -headR * 0.85f, headCenterZ + headR * 0.10f),
                 Vector3.one * (headR * 0.35f));
-            MakeSphere(visual.transform, "EyeR", new Color(0.04f, 0.04f, 0.06f),
+            MakeSphereEmissive(visual.transform, "EyeR", eyeColor, 2.0f,
                 new Vector3(headR * 0.4f, -headR * 0.85f, headCenterZ + headR * 0.10f),
                 Vector3.one * (headR * 0.35f));
 
             // — Руки —
             float shoulderHalf = shoulderW * 0.5f + 0.05f;
+
+            // — Плечевые накладки (немного ярче торса) —
+            Color pauldron = new Color(
+                Mathf.Clamp01(cfg.bodyColor.r * 1.3f + 0.05f),
+                Mathf.Clamp01(cfg.bodyColor.g * 1.3f + 0.05f),
+                Mathf.Clamp01(cfg.bodyColor.b * 1.3f + 0.05f));
+            MakeCube(visual.transform, "PauldronL", pauldron,
+                new Vector3(-shoulderHalf, 0f, shoulderZ + 0.05f),
+                new Vector3(0.24f * bs, 0.22f * bs, 0.14f));
+            MakeCube(visual.transform, "PauldronR", pauldron,
+                new Vector3(shoulderHalf, 0f, shoulderZ + 0.05f),
+                new Vector3(0.24f * bs, 0.22f * bs, 0.14f));
             // Левая рука — опущена.
             MakeCube(visual.transform, "ArmL", cfg.bodyColor,
                 new Vector3(-shoulderHalf, 0f, shoulderZ - armLen * 0.5f),
@@ -132,37 +145,40 @@ namespace StickEvolve.VFX
 
         private static void BuildWeapon(Transform parent, Weapon w, Color tint)
         {
+            Color bladeEmissive = new Color(0.55f, 0.75f, 1.0f);    // холодный «энчант»
+            Color glowEmissive  = new Color(
+                Mathf.Min(1f, tint.r + 0.5f),
+                Mathf.Min(1f, tint.g + 0.4f),
+                Mathf.Min(1f, tint.b + 0.6f));
             switch (w)
             {
                 case Weapon.Sword:
                     MakeCube(parent, "Hilt",  new Color(0.32f, 0.22f, 0.12f), new Vector3(0f, 0f, -0.10f), new Vector3(0.08f, 0.08f, 0.18f));
-                    MakeCube(parent, "Guard", new Color(0.55f, 0.42f, 0.20f), new Vector3(0f, 0f, 0f),    new Vector3(0.30f, 0.08f, 0.06f));
-                    MakeCube(parent, "Blade", new Color(0.88f, 0.90f, 0.96f), new Vector3(0f, 0f, 0.40f), new Vector3(0.10f, 0.04f, 0.70f));
+                    MakeCube(parent, "Guard", new Color(0.85f, 0.62f, 0.25f), new Vector3(0f, 0f, 0f),    new Vector3(0.30f, 0.08f, 0.06f));
+                    MakeCubeEmissive(parent, "Blade", new Color(0.92f, 0.96f, 1.0f), bladeEmissive, 0.7f, new Vector3(0f, 0f, 0.40f), new Vector3(0.10f, 0.04f, 0.70f));
                     break;
                 case Weapon.GreatSword:
                     MakeCube(parent, "Hilt",  new Color(0.30f, 0.20f, 0.10f), new Vector3(0f, 0f, -0.18f), new Vector3(0.10f, 0.10f, 0.28f));
-                    MakeCube(parent, "Guard", new Color(0.45f, 0.32f, 0.16f), new Vector3(0f, 0f, 0f),     new Vector3(0.45f, 0.10f, 0.07f));
-                    MakeCube(parent, "Blade", new Color(0.92f, 0.94f, 0.98f), new Vector3(0f, 0f, 0.55f), new Vector3(0.16f, 0.05f, 1.00f));
+                    MakeCube(parent, "Guard", new Color(0.75f, 0.55f, 0.20f), new Vector3(0f, 0f, 0f),     new Vector3(0.45f, 0.10f, 0.07f));
+                    MakeCubeEmissive(parent, "Blade", new Color(0.94f, 0.96f, 1.0f), bladeEmissive, 0.7f, new Vector3(0f, 0f, 0.55f), new Vector3(0.16f, 0.05f, 1.00f));
                     break;
                 case Weapon.Dagger:
                     MakeCube(parent, "Hilt",  new Color(0.18f, 0.12f, 0.08f), new Vector3(0f, 0f, -0.05f), new Vector3(0.07f, 0.07f, 0.12f));
-                    MakeCube(parent, "Blade", new Color(0.85f, 0.88f, 0.92f), new Vector3(0f, 0f, 0.18f), new Vector3(0.07f, 0.03f, 0.30f));
+                    MakeCubeEmissive(parent, "Blade", new Color(0.90f, 0.94f, 1.0f), bladeEmissive, 0.6f, new Vector3(0f, 0f, 0.18f), new Vector3(0.07f, 0.03f, 0.30f));
                     break;
                 case Weapon.Staff:
-                    MakeCube(parent,   "Shaft", new Color(0.32f, 0.20f, 0.10f), new Vector3(0f, 0f, 0.30f), new Vector3(0.06f, 0.06f, 0.95f));
-                    MakeSphere(parent, "OrbGlow", new Color(Mathf.Min(1f,tint.r+0.3f), Mathf.Min(1f,tint.g+0.3f), Mathf.Min(1f,tint.b+0.3f), 0.6f),
-                                                new Vector3(0f, 0f, 0.85f), Vector3.one * 0.35f);
-                    MakeSphere(parent, "Orb",     new Color(Mathf.Min(1f,tint.r+0.4f), Mathf.Min(1f,tint.g+0.4f), Mathf.Min(1f,tint.b+0.4f), 1f),
-                                                new Vector3(0f, 0f, 0.85f), Vector3.one * 0.20f);
+                    MakeCube(parent, "Shaft", new Color(0.40f, 0.25f, 0.12f), new Vector3(0f, 0f, 0.30f), new Vector3(0.06f, 0.06f, 0.95f));
+                    MakeSphereEmissive(parent, "OrbGlow", glowEmissive, 0.8f, new Vector3(0f, 0f, 0.85f), Vector3.one * 0.45f);
+                    MakeSphereEmissive(parent, "Orb",     glowEmissive, 2.5f, new Vector3(0f, 0f, 0.85f), Vector3.one * 0.22f);
                     break;
                 case Weapon.Bow:
-                    MakeCube(parent, "BowTop", new Color(0.45f, 0.28f, 0.15f), new Vector3(0f, 0f, 0.25f), new Vector3(0.06f, 0.06f, 0.45f));
-                    MakeCube(parent, "BowBot", new Color(0.45f, 0.28f, 0.15f), new Vector3(0f, 0f, -0.25f), new Vector3(0.06f, 0.06f, 0.45f));
-                    MakeCube(parent, "String", new Color(0.95f, 0.95f, 0.95f), new Vector3(-0.12f, 0f, 0f), new Vector3(0.02f, 0.02f, 0.85f));
+                    MakeCube(parent, "BowTop", new Color(0.55f, 0.32f, 0.16f), new Vector3(0f, 0f, 0.25f), new Vector3(0.06f, 0.06f, 0.45f));
+                    MakeCube(parent, "BowBot", new Color(0.55f, 0.32f, 0.16f), new Vector3(0f, 0f, -0.25f), new Vector3(0.06f, 0.06f, 0.45f));
+                    MakeCubeEmissive(parent, "String", new Color(0.95f, 0.95f, 0.95f), bladeEmissive, 0.3f, new Vector3(-0.12f, 0f, 0f), new Vector3(0.02f, 0.02f, 0.85f));
                     break;
                 case Weapon.Scythe:
-                    MakeCube(parent, "Shaft", new Color(0.16f, 0.08f, 0.04f), new Vector3(0f, 0f, 0.30f), new Vector3(0.07f, 0.07f, 1.05f));
-                    var blade = MakeCube(parent, "Blade", new Color(0.86f, 0.88f, 0.94f), new Vector3(0.25f, 0f, 0.82f), new Vector3(0.50f, 0.04f, 0.10f));
+                    MakeCube(parent, "Shaft", new Color(0.22f, 0.10f, 0.05f), new Vector3(0f, 0f, 0.30f), new Vector3(0.07f, 0.07f, 1.05f));
+                    var blade = MakeCubeEmissive(parent, "Blade", new Color(0.86f, 0.88f, 0.94f), new Color(0.6f, 0.20f, 0.85f), 0.8f, new Vector3(0.25f, 0f, 0.82f), new Vector3(0.50f, 0.04f, 0.10f));
                     blade.transform.localRotation = Quaternion.Euler(0f, -35f, 0f);
                     break;
             }
@@ -190,6 +206,40 @@ namespace StickEvolve.VFX
         }
 
         // === HELPERS ===
+
+        public static GameObject MakeCubeEmissive(Transform parent, string name, Color baseColor, Color emitColor, float emitIntensity, Vector3 localPos, Vector3 localScale)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            var col = go.GetComponent<Collider>(); if (col != null) Object.Destroy(col);
+            go.transform.SetParent(parent, worldPositionStays: false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            var mr = go.GetComponent<MeshRenderer>();
+            var mat = new Material(LitMaterial.SharedShader);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", baseColor);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", baseColor);
+            var emit = emitColor * emitIntensity;
+            emit.a = 1f;
+            if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", emit);
+            mat.EnableKeyword("_EMISSION");
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            mr.sharedMaterial = mat;
+            return go;
+        }
+
+        public static GameObject MakeSphereEmissive(Transform parent, string name, Color emitColor, float emitIntensity, Vector3 localPos, Vector3 localScale)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = name;
+            var col = go.GetComponent<Collider>(); if (col != null) Object.Destroy(col);
+            go.transform.SetParent(parent, worldPositionStays: false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            var mr = go.GetComponent<MeshRenderer>();
+            mr.sharedMaterial = LitMaterial.GetEmissive(emitColor, emitIntensity);
+            return go;
+        }
 
         public static GameObject MakeCube(Transform parent, string name, Color color, Vector3 localPos, Vector3 localScale)
         {
@@ -226,6 +276,8 @@ namespace StickEvolve.VFX
         private static System.Collections.Generic.Dictionary<int, Material> _cache = new();
         private static Shader _shader;
 
+        public static Shader SharedShader => GetShader();
+
         private static Shader GetShader()
         {
             if (_shader != null) return _shader;
@@ -233,6 +285,22 @@ namespace StickEvolve.VFX
             if (_shader == null) _shader = Shader.Find("Standard");
             if (_shader == null) _shader = Shader.Find("Sprites/Default");
             return _shader;
+        }
+
+        public static Material GetEmissive(Color color, float intensity)
+        {
+            int key = ColorKey(color, transparent: false) ^ 0x7FFF0000 ^ Mathf.RoundToInt(intensity * 100f);
+            if (_cache.TryGetValue(key, out var m) && m != null) return m;
+            var mat = new Material(GetShader());
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            var emit = color * intensity;
+            emit.a = 1f;
+            if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", emit);
+            mat.EnableKeyword("_EMISSION");
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            _cache[key] = mat;
+            return mat;
         }
 
         public static Material Get(Color color, bool transparent = false)
