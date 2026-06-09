@@ -21,6 +21,12 @@ namespace StickEvolve.Bootstrap
         [SerializeField] private int wavesToPlay = 100;
         [SerializeField] private float heroMoveSpeed = 4.5f;
 
+        [Header("Фон")]
+        [Tooltip("Если включено — рисуем единый художественный фон-картинку вместо процедурного неба/гор/деревьев.")]
+        [SerializeField] private bool useImageBackground = true;
+        [Tooltip("Путь к спрайту фона относительно любой папки Resources (без расширения).")]
+        [SerializeField] private string imageBackgroundResourcePath = "Backgrounds/fantasy_forest_bg";
+
         private StickGame _game;
         private WaveSpawner _spawner;
         private HUDController _hud;
@@ -100,6 +106,12 @@ namespace StickEvolve.Bootstrap
 
         private void BuildBackground()
         {
+            // Если выбран художественный фон-картинка — рисуем только её и выходим.
+            if (useImageBackground && TryBuildImageBackground())
+            {
+                return;
+            }
+
             // Камера тоже подкрасим, чтобы за границами sprite-неба тон совпадал.
             if (_cam != null) _cam.backgroundColor = new Color(0.55f, 0.80f, 0.98f);
 
@@ -243,6 +255,51 @@ namespace StickEvolve.Bootstrap
                 f.transform.position = new Vector3(-10f + i * 0.9f + Random.Range(-0.3f, 0.3f), -1.43f + Random.Range(-0.04f, 0.04f), 0f);
                 f.transform.localScale = Vector3.one * Random.Range(0.06f, 0.11f);
             }
+        }
+
+        /// <summary>
+        /// Грузит художественный фон из Resources и растягивает его как cover-fit на весь экран
+        /// (сохраняя пропорции картинки). Возвращает true, если фон успешно установлен.
+        /// </summary>
+        private bool TryBuildImageBackground()
+        {
+            if (string.IsNullOrEmpty(imageBackgroundResourcePath))
+            {
+                return false;
+            }
+
+            var sprite = Resources.Load<Sprite>(imageBackgroundResourcePath);
+            if (sprite == null)
+            {
+                Debug.LogWarning($"[PrototypeBootstrapper] Sprite '{imageBackgroundResourcePath}' не найден в Resources. " +
+                                 "Откатываюсь на процедурный фон.");
+                return false;
+            }
+
+            // Подложим под камеру нейтральный тёмный цвет — на случай если у спрайта непропорции и появится бордюр.
+            if (_cam != null) _cam.backgroundColor = new Color(0.04f, 0.05f, 0.08f);
+
+            var bgGO = new GameObject("Background_Image");
+            var sr = bgGO.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = -100;
+
+            // Cover-fit: масштабируем спрайт так, чтобы он закрыл весь видимый прямоугольник камеры,
+            // даже если соотношение сторон отличается.
+            float camHalfHeight = (_cam != null) ? _cam.orthographicSize : 5.5f;
+            float camHalfWidth = camHalfHeight * Mathf.Max(_cam != null ? _cam.aspect : 1f, 0.5f);
+            float spriteHalfWidth = sprite.bounds.extents.x;
+            float spriteHalfHeight = sprite.bounds.extents.y;
+            if (spriteHalfWidth <= 0f || spriteHalfHeight <= 0f)
+            {
+                return false;
+            }
+
+            float scale = Mathf.Max(camHalfWidth / spriteHalfWidth, camHalfHeight / spriteHalfHeight) * 1.02f;
+            bgGO.transform.position = new Vector3(0f, 0f, 0f);
+            bgGO.transform.localScale = new Vector3(scale, scale, 1f);
+
+            return true;
         }
 
         private void BuildCanvas()
