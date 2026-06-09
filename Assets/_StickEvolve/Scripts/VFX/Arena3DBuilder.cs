@@ -11,21 +11,121 @@ namespace StickEvolve.VFX
     {
         public static void Build(Transform arenaRoot, float halfWidth, float halfHeight)
         {
-            BuildSky(arenaRoot, halfWidth, halfHeight);
-            BuildFloor(arenaRoot, halfWidth, halfHeight);
-            BuildCompositionShapes(arenaRoot, halfWidth, halfHeight);
-            BuildMagicCircle(arenaRoot);
-            BuildWalls(arenaRoot, halfWidth, halfHeight);
-            BuildDecorativeTrim(arenaRoot, halfWidth, halfHeight);
-            BuildColumnsAndTorches(arenaRoot, halfWidth, halfHeight);
-            BuildSideShrines(arenaRoot, halfWidth, halfHeight);
-            BuildAmbientGlowSpots(arenaRoot, halfWidth, halfHeight);
+            // V5: убираем тёмную neon-box арену. Строим читаемый fantasy/ruins кадр:
+            // крупная каменная площадка, low-poly деревья/пропсы по краям и минимум эмиссива.
+            BuildFantasyBackdrop(arenaRoot, halfWidth, halfHeight);
+            BuildFantasyRuinFloor(arenaRoot, halfWidth, halfHeight);
+            BuildFantasyProps(arenaRoot, halfWidth, halfHeight);
+            BuildSoftCombatMarkers(arenaRoot, halfWidth, halfHeight);
 
-            // Парящие угольки над ареной (две группы — тёплые и холодные).
-            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.55f, halfHeight * 1.45f),
-                new Color(1f, 0.55f, 0.18f), count: 10);
-            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.55f, halfHeight * 1.45f),
-                new Color(0.45f, 0.55f, 1.0f), count: 5);
+            EmberParticles.Spawn(arenaRoot, new Vector2(halfWidth * 1.35f, halfHeight * 1.25f),
+                new Color(1f, 0.62f, 0.24f), count: 6);
+        }
+
+        private static void BuildFantasyBackdrop(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            ground.name = "ForestBackdrop_Ground";
+            var gc = ground.GetComponent<Collider>(); if (gc != null) Object.Destroy(gc);
+            ground.transform.SetParent(arenaRoot, false);
+            ground.transform.localPosition = new Vector3(0f, 0f, -0.04f);
+            ground.transform.localScale = new Vector3(halfWidth * 4.2f, halfHeight * 3.2f, 1f);
+            ground.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(new Color(0.075f, 0.115f, 0.075f));
+
+            var vignette = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            vignette.name = "WarmBackdropPatch";
+            var vc = vignette.GetComponent<Collider>(); if (vc != null) Object.Destroy(vc);
+            vignette.transform.SetParent(arenaRoot, false);
+            vignette.transform.localPosition = new Vector3(0f, 0.2f, -0.035f);
+            vignette.transform.localScale = new Vector3(halfWidth * 2.7f, halfHeight * 2.1f, 1f);
+            vignette.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(new Color(0.14f, 0.105f, 0.075f));
+        }
+
+        private static void BuildFantasyRuinFloor(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            var root = new GameObject("RuinFloor_LowPoly");
+            root.transform.SetParent(arenaRoot, false);
+
+            Color[] stone =
+            {
+                new Color(0.34f, 0.31f, 0.27f),
+                new Color(0.28f, 0.27f, 0.24f),
+                new Color(0.40f, 0.35f, 0.29f),
+                new Color(0.23f, 0.25f, 0.23f),
+            };
+
+            const float tile = 0.95f;
+            int cols = Mathf.CeilToInt(halfWidth * 2f / tile) + 1;
+            int rows = Mathf.CeilToInt(halfHeight * 2f / tile) + 1;
+            for (int y = 0; y < rows; y++)
+            {
+                for (int x = 0; x < cols; x++)
+                {
+                    float px = -halfWidth + x * tile;
+                    float py = -halfHeight + y * tile;
+                    float edge = Mathf.Max(Mathf.Abs(px) / Mathf.Max(halfWidth, 0.1f), Mathf.Abs(py) / Mathf.Max(halfHeight, 0.1f));
+                    if (edge > 1.05f && ((x + y) % 3 != 0)) continue; // неровные края, не идеальная коробка
+                    var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    q.name = $"RuinStone_{x}_{y}";
+                    var col = q.GetComponent<Collider>(); if (col != null) Object.Destroy(col);
+                    q.transform.SetParent(root.transform, false);
+                    q.transform.localPosition = new Vector3(px + (((x * 17 + y * 5) % 7) - 3) * 0.018f, py, 0f);
+                    q.transform.localRotation = Quaternion.Euler(0f, 0f, ((x * 11 + y * 19) % 9 - 4) * 1.7f);
+                    float s = tile * (0.86f + ((x * 3 + y * 5) % 5) * 0.025f);
+                    q.transform.localScale = new Vector3(s, s, 1f);
+                    q.GetComponent<MeshRenderer>().sharedMaterial = LitMaterial.Get(stone[(x * 7 + y * 13) % stone.Length]);
+                }
+            }
+
+            // Центральная дорожка — тёплая, но не неоновая.
+            Character3DBuilder.MakeCube(root.transform, "DirtCombatPath", new Color(0.24f, 0.15f, 0.09f),
+                new Vector3(0f, 0f, 0.018f), new Vector3(halfWidth * 1.65f, halfHeight * 0.58f, 0.025f));
+            Character3DBuilder.MakeCube(root.transform, "PathEdgeTop", new Color(0.48f, 0.34f, 0.18f),
+                new Vector3(0f, halfHeight * 0.31f, 0.035f), new Vector3(halfWidth * 1.55f, 0.045f, 0.035f));
+            Character3DBuilder.MakeCube(root.transform, "PathEdgeBot", new Color(0.48f, 0.34f, 0.18f),
+                new Vector3(0f, -halfHeight * 0.31f, 0.035f), new Vector3(halfWidth * 1.55f, 0.045f, 0.035f));
+        }
+
+        private static void BuildFantasyProps(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            // Деревья и пропсы из уже существующего low-poly пака. Если какой-то GLB не загрузится,
+            // просто пропускаем его — сцена останется рабочей.
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_large", "Tree_NW", new Vector3(-halfWidth - 1.35f, halfHeight * 0.70f, 0f), -18f, 1.35f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_medium", "Tree_NE", new Vector3(halfWidth + 1.25f, halfHeight * 0.55f, 0f), 22f, 1.18f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_B_medium", "Tree_SW", new Vector3(-halfWidth - 1.20f, -halfHeight * 0.65f, 0f), 12f, 1.18f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_small", "Tree_SE", new Vector3(halfWidth + 1.15f, -halfHeight * 0.58f, 0f), -28f, 1.05f);
+
+            AddResourceModel(arenaRoot, "Models/Props/CratesDecor", "Crates_Left", new Vector3(-halfWidth * 0.86f, -halfHeight * 0.78f, 0.02f), 12f, 0.65f);
+            AddResourceModel(arenaRoot, "Models/Props/BarrelDecor", "Barrel_Right", new Vector3(halfWidth * 0.82f, halfHeight * 0.72f, 0.02f), -8f, 0.72f);
+            AddResourceModel(arenaRoot, "Models/Props/ChestGold", "Chest_Gold", new Vector3(halfWidth * 0.74f, -halfHeight * 0.74f, 0.02f), -25f, 0.58f);
+            AddResourceModel(arenaRoot, "Models/Props/Cauldron", "Cauldron_Left", new Vector3(-halfWidth * 0.78f, halfHeight * 0.70f, 0.02f), 20f, 0.62f);
+
+            // Две тёплые точки света вместо кислотного неона.
+            TorchLight.Spawn(arenaRoot, new Vector3(-halfWidth * 0.88f, halfHeight * 0.82f, 0.85f), new Color(1f, 0.58f, 0.24f));
+            TorchLight.Spawn(arenaRoot, new Vector3(halfWidth * 0.88f, -halfHeight * 0.82f, 0.85f), new Color(1f, 0.58f, 0.24f));
+        }
+
+        private static void BuildSoftCombatMarkers(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            Character3DBuilder.MakeCube(arenaRoot, "HeroSideBrush", new Color(0.10f, 0.24f, 0.22f),
+                new Vector3(-halfWidth * 0.46f, 0f, 0.028f), new Vector3(0.05f, halfHeight * 1.20f, 0.025f));
+            Character3DBuilder.MakeCube(arenaRoot, "EnemySideBrush", new Color(0.28f, 0.10f, 0.08f),
+                new Vector3(halfWidth * 0.46f, 0f, 0.028f), new Vector3(0.05f, halfHeight * 1.20f, 0.025f));
+        }
+
+        private static GameObject AddResourceModel(Transform parent, string path, string name, Vector3 localPos, float rotZ, float scale)
+        {
+            var prefab = Resources.Load<GameObject>(path);
+            if (prefab == null) return null;
+            var model = Object.Instantiate(prefab, parent, false);
+            model.name = name;
+            model.transform.localPosition = localPos;
+            model.transform.localRotation = Quaternion.Euler(90f, 0f, rotZ);
+            model.transform.localScale = Vector3.one * scale;
+            var colliders = model.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+                if (colliders[i] != null) Object.Destroy(colliders[i]);
+            return model;
         }
 
         private static void BuildFloor(Transform arenaRoot, float halfWidth, float halfHeight)
@@ -343,59 +443,55 @@ namespace StickEvolve.VFX
             foreach (var l in existing)
                 if (l != null) Object.Destroy(l.gameObject);
 
-            // Sun (тёплый, яркий, с мягкими тенями).
+            // V5 свет: ярче и теплее, без фиолетовой техно-темноты.
             var sun = new GameObject("Sun3D");
             var sl = sun.AddComponent<Light>();
             sl.type = LightType.Directional;
-            sl.color = new Color(1f, 0.92f, 0.78f);
-            sl.intensity = 1.4f;
+            sl.color = new Color(1f, 0.88f, 0.66f);
+            sl.intensity = 1.85f;
             sl.shadows = LightShadows.Soft;
-            sun.transform.rotation = Quaternion.Euler(55f, 35f, 0f);
+            sun.transform.rotation = Quaternion.Euler(52f, 28f, 0f);
 
-            // Заполняющий свет — холодный, без теней.
             var fill = new GameObject("Fill3D");
             var fl = fill.AddComponent<Light>();
             fl.type = LightType.Directional;
-            fl.color = new Color(0.55f, 0.70f, 1.0f);
-            fl.intensity = 0.55f;
+            fl.color = new Color(0.62f, 0.78f, 1.0f);
+            fl.intensity = 0.42f;
             fl.shadows = LightShadows.None;
-            fill.transform.rotation = Quaternion.Euler(35f, -150f, 0f);
+            fill.transform.rotation = Quaternion.Euler(38f, -145f, 0f);
 
-            // Контровый «лунный» свет сверху.
             var rim = new GameObject("Rim3D");
             var rl = rim.AddComponent<Light>();
             rl.type = LightType.Directional;
-            rl.color = new Color(0.85f, 0.55f, 1.0f);
-            rl.intensity = 0.4f;
+            rl.color = new Color(1.0f, 0.62f, 0.34f);
+            rl.intensity = 0.32f;
             rl.shadows = LightShadows.None;
-            rim.transform.rotation = Quaternion.Euler(20f, 180f, 0f);
+            rim.transform.rotation = Quaternion.Euler(24f, 175f, 0f);
 
-            // Ambient — тёплый закатный градиент.
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor     = new Color(0.30f, 0.22f, 0.40f);
-            RenderSettings.ambientEquatorColor = new Color(0.18f, 0.13f, 0.22f);
-            RenderSettings.ambientGroundColor  = new Color(0.08f, 0.06f, 0.10f);
+            RenderSettings.ambientSkyColor     = new Color(0.34f, 0.30f, 0.23f);
+            RenderSettings.ambientEquatorColor = new Color(0.22f, 0.20f, 0.16f);
+            RenderSettings.ambientGroundColor  = new Color(0.09f, 0.10f, 0.08f);
 
-            // Туман — тонкий, для глубины.
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.06f, 0.04f, 0.10f);
-            RenderSettings.fogDensity = 0.018f;
+            RenderSettings.fogColor = new Color(0.09f, 0.10f, 0.075f);
+            RenderSettings.fogDensity = 0.010f;
         }
 
         public static void ConfigureCamera(Camera cam, float halfWidth, float halfHeight)
         {
             if (cam == null) return;
-            // V4: ортографическая 2.5D/isometric камера. Перспектива делала персонажей справа
-            // гигантскими роботами и ломала читаемость кадра.
+            // V5: ближе к бою. В v4 камера показывала весь прямоугольник, из-за чего модели
+            // были микроскопическими, а арена доминировала над персонажами.
             cam.orthographic = true;
-            cam.orthographicSize = 6.6f;
+            cam.orthographicSize = 4.85f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.09f, 0.055f, 0.08f);
-            cam.transform.position = new Vector3(0f, -8.5f, 7.4f);
-            cam.transform.LookAt(new Vector3(0f, 0f, 0.65f), Vector3.up);
+            cam.backgroundColor = new Color(0.055f, 0.075f, 0.055f);
+            cam.transform.position = new Vector3(0f, -6.3f, 6.5f);
+            cam.transform.LookAt(new Vector3(0f, 0f, 0.85f), Vector3.up);
         }
     }
 }
