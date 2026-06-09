@@ -1,4 +1,5 @@
 using StickEvolve.Economy;
+using StickEvolve.VFX;
 using UnityEngine;
 
 namespace StickEvolve.Combat
@@ -38,6 +39,8 @@ namespace StickEvolve.Combat
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
             go.transform.rotation = Quaternion.Euler(0f, 0f, angle);
 
+            Build3DProjectileVisual(go.transform, color);
+
             var col = go.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
             col.radius = 0.5f;
@@ -52,6 +55,47 @@ namespace StickEvolve.Combat
             b.direction = dir.normalized;
             b.targetTeam = team;
             return b;
+        }
+
+        private static void Build3DProjectileVisual(Transform parent, Color color)
+        {
+            // Старая пуля — плоский SpriteRenderer. Для перспективной 3D-камеры добавляем
+            // эмиссивное ядро + короткий trail + маленький point light. Коллайдеры/физику не трогаем.
+            var core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            core.name = "BulletCore3D";
+            var coreCol = core.GetComponent<Collider>();
+            if (coreCol != null) Destroy(coreCol);
+            core.transform.SetParent(parent, worldPositionStays: false);
+            core.transform.localPosition = new Vector3(0f, 0f, 0.28f);
+            // Parent у старой 2D-пули уже растянут (0.35 x 0.12), поэтому компенсируем scale,
+            // чтобы ядро не превратилось в плоскую иголку.
+            core.transform.localScale = new Vector3(0.62f, 1.80f, 0.22f);
+            var mr = core.GetComponent<MeshRenderer>();
+            mr.sharedMaterial = LitMaterial.GetEmissive(color, 2.4f);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+
+            var trail = parent.gameObject.AddComponent<TrailRenderer>();
+            trail.time = 0.14f;
+            trail.widthMultiplier = 0.16f;
+            trail.numCornerVertices = 2;
+            trail.numCapVertices = 2;
+            trail.minVertexDistance = 0.03f;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            trail.material = LitMaterial.GetEmissive(color, 1.4f);
+            trail.startColor = new Color(color.r, color.g, color.b, 0.95f);
+            trail.endColor = new Color(color.r, color.g, color.b, 0f);
+
+            var lgo = new GameObject("BulletLight3D");
+            lgo.transform.SetParent(parent, worldPositionStays: false);
+            lgo.transform.localPosition = new Vector3(0f, 0f, 0.30f);
+            var light = lgo.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = color;
+            light.intensity = 0.45f;
+            light.range = 1.4f;
+            light.shadows = LightShadows.None;
         }
 
         private void Update()
@@ -93,7 +137,9 @@ namespace StickEvolve.Combat
                 crit = true;
             }
             dmg.TakeDamage(final, transform.position);
+            Color hitColor = crit ? new Color(1f, 0.75f, 0.15f) : new Color(0.75f, 0.9f, 1f);
             DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white);
+            ImpactBurst3D.Spawn(transform.position, hitColor, count: crit ? 14 : 8, speed: crit ? 4.8f : 3.4f, lifetime: crit ? 0.42f : 0.30f, size: crit ? 0.10f : 0.075f);
 
             if (crit && ownerHero != null) ownerHero.OnCrit(transform.position);
 
@@ -123,6 +169,7 @@ namespace StickEvolve.Combat
             if (hp == null || !hp.IsAlive) return;
             hp.Heal(damage);
             DamageNumber.Spawn(transform.position, damage, new Color(0.4f, 1f, 0.5f));
+            ImpactBurst3D.Spawn(transform.position, new Color(0.35f, 1f, 0.55f), count: 8, speed: 2.8f, lifetime: 0.30f, size: 0.075f);
         }
 
         private void ApplySplash(Collider2D primaryTarget, float splashDamage)
@@ -139,6 +186,7 @@ namespace StickEvolve.Combat
                 d.TakeDamage(splashDamage, transform.position);
             }
             SpawnExplosionFx(transform.position, explosionRadius);
+            ImpactBurst3D.Spawn(transform.position, new Color(1f, 0.45f, 0.10f), count: 22, speed: 5.5f, lifetime: 0.55f, size: 0.12f);
         }
 
         public static void SpawnExplosionFx(Vector3 pos, float radius)
