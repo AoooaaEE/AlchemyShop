@@ -26,6 +26,10 @@ namespace StickEvolve.Bootstrap
         [SerializeField] private bool useImageBackground = true;
         [Tooltip("Путь к спрайту фона относительно любой папки Resources (без расширения).")]
         [SerializeField] private string imageBackgroundResourcePath = "Backgrounds/fantasy_forest_bg";
+        [Tooltip("Сдвиг фона по вертикали в мировых координатах. Отрицательное значение опускает фон, чтобы линия горизонта/травы пришлась туда, где стоят персонажи (y≈-1.3).")]
+        [SerializeField] private float imageBackgroundYOffset = -2.0f;
+        [Tooltip("Запас по cover-fit (1.0 = впритык по краю камеры).")]
+        [SerializeField] private float imageBackgroundPadding = 1.04f;
 
         private StickGame _game;
         private WaveSpawner _spawner;
@@ -284,8 +288,8 @@ namespace StickEvolve.Bootstrap
             sr.sprite = sprite;
             sr.sortingOrder = -100;
 
-            // Cover-fit: масштабируем спрайт так, чтобы он закрыл весь видимый прямоугольник камеры,
-            // даже если соотношение сторон отличается.
+            // Cover-fit с учётом вертикального оффсета: спрайт должен закрывать всю видимую область
+            // камеры даже после сдвига вниз/вверх, иначе по краям проступит цвет камеры.
             float camHalfHeight = (_cam != null) ? _cam.orthographicSize : 5.5f;
             float camHalfWidth = camHalfHeight * Mathf.Max(_cam != null ? _cam.aspect : 1f, 0.5f);
             float spriteHalfWidth = sprite.bounds.extents.x;
@@ -295,8 +299,12 @@ namespace StickEvolve.Bootstrap
                 return false;
             }
 
-            float scale = Mathf.Max(camHalfWidth / spriteHalfWidth, camHalfHeight / spriteHalfHeight) * 1.02f;
-            bgGO.transform.position = new Vector3(0f, 0f, 0f);
+            // Чтобы при оффсете dy спрайт по вертикали покрыл [-camHalfHeight..+camHalfHeight],
+            // нужна effective полу-высота >= camHalfHeight + |dy|.
+            float requiredHalfHeight = camHalfHeight + Mathf.Abs(imageBackgroundYOffset);
+            float scale = Mathf.Max(camHalfWidth / spriteHalfWidth, requiredHalfHeight / spriteHalfHeight)
+                          * Mathf.Max(imageBackgroundPadding, 1f);
+            bgGO.transform.position = new Vector3(0f, imageBackgroundYOffset, 0f);
             bgGO.transform.localScale = new Vector3(scale, scale, 1f);
 
             return true;
