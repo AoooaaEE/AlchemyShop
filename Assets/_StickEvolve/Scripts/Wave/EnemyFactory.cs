@@ -121,7 +121,7 @@ namespace StickEvolve.Wave
                 weapon       = w,
                 isHero       = false,
                 modelResourcePath = ImportedModelForKind(kind),
-                modelScale   = kind == EnemyKind.Boss ? 1.85f : 1.38f,
+                modelScale   = kind == EnemyKind.Boss ? 1.30f : 0.92f,
             });
         }
 

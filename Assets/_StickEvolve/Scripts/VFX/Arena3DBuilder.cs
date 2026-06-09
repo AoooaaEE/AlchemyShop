@@ -77,32 +77,41 @@ namespace StickEvolve.VFX
                 }
             }
 
-            // Центральная дорожка — тёплая, но не неоновая.
-            Character3DBuilder.MakeCube(root.transform, "DirtCombatPath", new Color(0.24f, 0.15f, 0.09f),
-                new Vector3(0f, 0f, 0.018f), new Vector3(halfWidth * 1.65f, halfHeight * 0.58f, 0.025f));
-            Character3DBuilder.MakeCube(root.transform, "PathEdgeTop", new Color(0.48f, 0.34f, 0.18f),
-                new Vector3(0f, halfHeight * 0.31f, 0.035f), new Vector3(halfWidth * 1.55f, 0.045f, 0.035f));
-            Character3DBuilder.MakeCube(root.transform, "PathEdgeBot", new Color(0.48f, 0.34f, 0.18f),
-                new Vector3(0f, -halfHeight * 0.31f, 0.035f), new Vector3(halfWidth * 1.55f, 0.045f, 0.035f));
+            // V6: убрали огромный коричневый прямоугольник из v5. Вместо него —
+            // несколько рваных земляных пятен ниже по контрасту, чтобы центр не выглядел заглушкой.
+            Color dirt = new Color(0.19f, 0.14f, 0.10f);
+            void Patch(string name, Vector3 pos, Vector3 scale, float rot, Color color)
+            {
+                var patch = Character3DBuilder.MakeCube(root.transform, name, color, pos, scale);
+                patch.transform.localRotation = Quaternion.Euler(0f, 0f, rot);
+            }
+            Patch("DirtPatch_A", new Vector3(-1.45f, 0.38f, 0.012f), new Vector3(1.25f, 0.42f, 0.018f), -7f, dirt);
+            Patch("DirtPatch_B", new Vector3(0.15f, -0.20f, 0.012f), new Vector3(1.55f, 0.34f, 0.018f), 4f, dirt);
+            Patch("DirtPatch_C", new Vector3(1.58f, 0.28f, 0.012f), new Vector3(1.10f, 0.38f, 0.018f), 9f, dirt);
+            Patch("DirtPatch_D", new Vector3(-0.55f, -0.78f, 0.012f), new Vector3(0.95f, 0.30f, 0.018f), -12f, new Color(0.22f, 0.17f, 0.12f));
         }
 
         private static void BuildFantasyProps(Transform arenaRoot, float halfWidth, float halfHeight)
         {
             // Деревья и пропсы из уже существующего low-poly пака. Если какой-то GLB не загрузится,
             // просто пропускаем его — сцена останется рабочей.
-            AddResourceModel(arenaRoot, "Models/Nature/trees_A_large", "Tree_NW", new Vector3(-halfWidth - 1.35f, halfHeight * 0.70f, 0f), -18f, 1.35f);
-            AddResourceModel(arenaRoot, "Models/Nature/trees_A_medium", "Tree_NE", new Vector3(halfWidth + 1.25f, halfHeight * 0.55f, 0f), 22f, 1.18f);
-            AddResourceModel(arenaRoot, "Models/Nature/trees_B_medium", "Tree_SW", new Vector3(-halfWidth - 1.20f, -halfHeight * 0.65f, 0f), 12f, 1.18f);
-            AddResourceModel(arenaRoot, "Models/Nature/trees_A_small", "Tree_SE", new Vector3(halfWidth + 1.15f, -halfHeight * 0.58f, 0f), -28f, 1.05f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_large", "Tree_NW", new Vector3(-halfWidth - 1.95f, halfHeight * 0.78f, 0f), -18f, 1.02f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_medium", "Tree_NE", new Vector3(halfWidth + 1.85f, halfHeight * 0.64f, 0f), 22f, 0.94f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_B_medium", "Tree_SW", new Vector3(-halfWidth - 1.80f, -halfHeight * 0.76f, 0f), 12f, 0.92f);
+            AddResourceModel(arenaRoot, "Models/Nature/trees_A_small", "Tree_SE", new Vector3(halfWidth + 1.75f, -halfHeight * 0.70f, 0f), -28f, 0.86f);
 
-            AddResourceModel(arenaRoot, "Models/Props/CratesDecor", "Crates_Left", new Vector3(-halfWidth * 0.86f, -halfHeight * 0.78f, 0.02f), 12f, 0.65f);
-            AddResourceModel(arenaRoot, "Models/Props/BarrelDecor", "Barrel_Right", new Vector3(halfWidth * 0.82f, halfHeight * 0.72f, 0.02f), -8f, 0.72f);
-            AddResourceModel(arenaRoot, "Models/Props/ChestGold", "Chest_Gold", new Vector3(halfWidth * 0.74f, -halfHeight * 0.74f, 0.02f), -25f, 0.58f);
-            AddResourceModel(arenaRoot, "Models/Props/Cauldron", "Cauldron_Left", new Vector3(-halfWidth * 0.78f, halfHeight * 0.70f, 0.02f), 20f, 0.62f);
+            AddResourceModel(arenaRoot, "Models/Props/CratesDecor", "Crates_Left", new Vector3(-halfWidth * 1.03f, -halfHeight * 0.92f, 0.02f), 12f, 0.46f);
+            AddResourceModel(arenaRoot, "Models/Props/BarrelDecor", "Barrel_Right", new Vector3(halfWidth * 1.02f, halfHeight * 0.88f, 0.02f), -8f, 0.50f);
+            AddResourceModel(arenaRoot, "Models/Props/ChestGold", "Chest_Gold", new Vector3(halfWidth * 0.98f, -halfHeight * 0.88f, 0.02f), -25f, 0.42f);
+            AddResourceModel(arenaRoot, "Models/Props/Cauldron", "Cauldron_Left", new Vector3(-halfWidth * 1.00f, halfHeight * 0.86f, 0.02f), 20f, 0.45f);
 
-            // Две тёплые точки света вместо кислотного неона.
-            TorchLight.Spawn(arenaRoot, new Vector3(-halfWidth * 0.88f, halfHeight * 0.82f, 0.85f), new Color(1f, 0.58f, 0.24f));
-            TorchLight.Spawn(arenaRoot, new Vector3(halfWidth * 0.88f, -halfHeight * 0.82f, 0.85f), new Color(1f, 0.58f, 0.24f));
+            // Тёплые точки света держим у краёв, чтобы они не забивали бой.
+            var torchA = TorchLight.Spawn(arenaRoot, new Vector3(-halfWidth * 1.04f, halfHeight * 0.96f, 0.82f), new Color(1f, 0.58f, 0.24f));
+            var torchB = TorchLight.Spawn(arenaRoot, new Vector3(halfWidth * 1.04f, -halfHeight * 0.96f, 0.82f), new Color(1f, 0.58f, 0.24f));
+            torchA.baseIntensity = 1.45f;
+            torchA.baseRange = 3.0f;
+            torchB.baseIntensity = 1.45f;
+            torchB.baseRange = 3.0f;
         }
 
         private static void BuildSoftCombatMarkers(Transform arenaRoot, float halfWidth, float halfHeight)
@@ -482,16 +491,15 @@ namespace StickEvolve.VFX
         public static void ConfigureCamera(Camera cam, float halfWidth, float halfHeight)
         {
             if (cam == null) return;
-            // V5: ближе к бою. В v4 камера показывала весь прямоугольник, из-за чего модели
-            // были микроскопическими, а арена доминировала над персонажами.
+            // V6: чуть дальше, чем v5. Там модели стали огромными и скучились в центре.
             cam.orthographic = true;
-            cam.orthographicSize = 4.85f;
+            cam.orthographicSize = 5.55f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.055f, 0.075f, 0.055f);
-            cam.transform.position = new Vector3(0f, -6.3f, 6.5f);
-            cam.transform.LookAt(new Vector3(0f, 0f, 0.85f), Vector3.up);
+            cam.transform.position = new Vector3(0f, -7.15f, 6.9f);
+            cam.transform.LookAt(new Vector3(0f, 0f, 0.75f), Vector3.up);
         }
     }
 }

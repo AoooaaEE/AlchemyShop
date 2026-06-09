@@ -153,10 +153,10 @@ namespace StickEvolve.Bootstrap
             if (use3D)
             {
                 // Под портретный кадр и наклонённую камеру.
-                arenaHalfWidth  = 4.25f;
-                arenaHalfHeight = 4.25f;
+                arenaHalfWidth  = 4.80f;
+                arenaHalfHeight = 4.80f;
                 _heroX = 0f;
-                _enemyX = arenaHalfWidth + 0.75f;
+                _enemyX = arenaHalfWidth + 1.05f;
                 return;
             }
             float halfHeight = _cam.orthographicSize;
@@ -550,7 +550,7 @@ namespace StickEvolve.Bootstrap
                     weapon       = Weapon3DForHero(cls),
                     isHero       = true,
                     modelResourcePath = ImportedModelForHero(cls),
-                    modelScale   = 1.55f,
+                    modelScale   = 1.05f,
                 });
 
                 var col3 = go.AddComponent<CapsuleCollider2D>();
