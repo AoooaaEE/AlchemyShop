@@ -546,9 +546,9 @@ namespace StickEvolve.Bootstrap
                     isHero       = true,
                 });
 
-                var col = go.AddComponent<CapsuleCollider2D>();
-                col.size = new Vector2(0.6f, 1.4f);
-                col.isTrigger = true;
+                var col3 = go.AddComponent<CapsuleCollider2D>();
+                col3.size = new Vector2(0.6f, 1.4f);
+                col3.isTrigger = true;
                 go.AddComponent<TeamMember>();
                 go.AddComponent<Health>();
                 var hero3 = go.AddComponent<Hero>();
