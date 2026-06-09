@@ -81,7 +81,7 @@ namespace StickEvolve.VFX
             _meshBaseColors.Clear();
             if (_meshFlashBlock == null) _meshFlashBlock = new MaterialPropertyBlock();
 
-            var srs = GetComponentsInChildren<SpriteRenderer>(includeInactive: false);
+            var srs = GetComponentsInChildren<SpriteRenderer>(false);
             for (int i = 0; i < srs.Length; i++)
             {
                 if (srs[i] == null) continue;
@@ -91,7 +91,7 @@ namespace StickEvolve.VFX
                 _baseColors.Add(srs[i].color);
             }
 
-            var mrs = GetComponentsInChildren<MeshRenderer>(includeInactive: false);
+            var mrs = GetComponentsInChildren<MeshRenderer>(false);
             for (int i = 0; i < mrs.Length; i++)
             {
                 var mr = mrs[i];

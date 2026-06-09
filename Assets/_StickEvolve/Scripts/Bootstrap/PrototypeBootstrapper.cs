@@ -746,8 +746,12 @@ namespace StickEvolve.Bootstrap
             }
             if (leader == null) return;
 
-            // 1) Лидер на ввод
+            // 1) Лидер на ввод.
+            // В 3D-кадре камера смотрит на арену под углом, поэтому экранное «лево/право»
+            // ощущается зеркально относительно старой XY-логики. Инвертим только X в 3D,
+            // чтобы кнопка/стрелка влево реально двигала героя влево на экране.
             Vector2 input = Player.PlayerInput.Movement;
+            if (use3D) input.x *= -1f;
             float dt = Time.deltaTime;
             Vector3 leaderPos = leader.transform.position;
             if (input.sqrMagnitude > 0.0001f)
