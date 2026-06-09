@@ -114,14 +114,21 @@ namespace StickEvolve.VFX
             if (_renderers.Count == 0 && _meshRenderers.Count == 0) CaptureRenderers();
 
             Color spark = amount >= 10f ? new Color(1f, 0.35f, 0.10f) : new Color(0.75f, 0.90f, 1f);
-            ImpactBurst3D.Spawn(worldPos, spark, count: 7, speed: 3.2f, lifetime: 0.28f, size: 0.075f);
-            if (amount >= 6f) CameraShaker.Shake(0.025f);
+            ImpactBurst3D.Spawn(worldPos, spark, count: amount >= 10f ? 11 : 7, speed: amount >= 10f ? 4.2f : 3.2f, lifetime: amount >= 10f ? 0.36f : 0.28f, size: amount >= 10f ? 0.095f : 0.075f);
+            StickAudio.PlayHit(amount, worldPos);
+            if (amount >= 6f)
+            {
+                CameraShaker.Shake(0.025f);
+                HitStop.Punch(amount >= 10f ? 0.060f : 0.040f, amount >= 10f ? 0.06f : 0.10f);
+            }
         }
 
         private void OnDeath()
         {
             DeathBurst.Spawn(transform.position, deathParticleColor, deathParticleCount);
             ImpactBurst3D.SpawnDeath(transform.position, deathParticleColor);
+            StickAudio.PlayDeath(transform.position);
+            HitStop.Punch(0.070f, 0.055f);
             if (deathShakeTrauma > 0f) CameraShaker.Shake(deathShakeTrauma);
             if (_outlineGO != null) Destroy(_outlineGO);
             // Останавливаем сочки, чтобы не драться с DeathFallAnimator за scale/color.

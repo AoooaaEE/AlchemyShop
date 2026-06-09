@@ -78,7 +78,8 @@ namespace StickEvolve.VFX
 
         private void Update()
         {
-            _age += Time.deltaTime;
+            float dt = Time.unscaledDeltaTime;
+            _age += dt;
             float t = Mathf.Clamp01(_age / _lifetime);
             float alpha = 1f - t;
             Color emit = _color * Mathf.Lerp(2.4f, 0.0f, t);
@@ -89,10 +90,10 @@ namespace StickEvolve.VFX
                 var shard = _shards[i];
                 if (shard.t == null) continue;
 
-                shard.velocity *= 1f - 3.2f * Time.deltaTime;
-                shard.velocity.z -= 5.5f * Time.deltaTime;
-                shard.t.localPosition += shard.velocity * Time.deltaTime;
-                shard.t.Rotate(shard.spin * Time.deltaTime, Space.Self);
+                shard.velocity *= 1f - 3.2f * dt;
+                shard.velocity.z -= 5.5f * dt;
+                shard.t.localPosition += shard.velocity * dt;
+                shard.t.Rotate(shard.spin * dt, Space.Self);
 
                 float s = shard.startScale * Mathf.Lerp(1.15f, 0.15f, t);
                 shard.t.localScale = new Vector3(s, s, s);

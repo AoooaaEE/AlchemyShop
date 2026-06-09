@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using StickEvolve.Economy;
+using StickEvolve.VFX;
 using UnityEngine;
 
 namespace StickEvolve.Combat
@@ -182,6 +183,7 @@ namespace StickEvolve.Combat
                     {
                         dmg.TakeDamage(damage, _target.transform.position);
                         DamageNumber.Spawn(_target.transform.position, damage, new Color(1f, 0.3f, 0.3f));
+                        ImpactBurst3D.Spawn(_target.transform.position, new Color(1f, 0.32f, 0.20f), count: 9, speed: 3.7f, lifetime: 0.32f, size: 0.085f);
 
                         // Шипы: герой возвращает урон ближнему атакующему.
                         var hero = _target.GetComponent<Hero>();
@@ -189,6 +191,7 @@ namespace StickEvolve.Combat
                         {
                             Health.TakeDamage(hero.thornsDamage, transform.position);
                             DamageNumber.Spawn(transform.position, hero.thornsDamage, new Color(0.6f, 0.9f, 1f));
+                            ImpactBurst3D.Spawn(transform.position, new Color(0.45f, 0.80f, 1f), count: 8, speed: 3.4f, lifetime: 0.30f, size: 0.075f);
                         }
                     }
                     break;
@@ -200,6 +203,9 @@ namespace StickEvolve.Combat
         {
             float r = Mathf.Max(0.5f, bulletExplosionRadius);
             Bullet.SpawnExplosionFx(transform.position, r);
+            ImpactBurst3D.Spawn(transform.position, new Color(1f, 0.38f, 0.10f), count: 24, speed: 5.8f, lifetime: 0.58f, size: 0.12f);
+            StickAudio.PlayExplosion(transform.position);
+            HitStop.Punch(0.060f, 0.07f);
             var heroes = HeroRegistry.Instance.Alive;
             for (int i = heroes.Count - 1; i >= 0; i--)
             {

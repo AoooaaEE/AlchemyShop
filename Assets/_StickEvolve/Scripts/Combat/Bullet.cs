@@ -54,6 +54,7 @@ namespace StickEvolve.Combat
             b.speed = spd;
             b.direction = dir.normalized;
             b.targetTeam = team;
+            StickAudio.PlayShoot(pos);
             return b;
         }
 
@@ -138,8 +139,13 @@ namespace StickEvolve.Combat
             }
             dmg.TakeDamage(final, transform.position);
             Color hitColor = crit ? new Color(1f, 0.75f, 0.15f) : new Color(0.75f, 0.9f, 1f);
-            DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white);
+            DamageNumber.Spawn(transform.position, final, crit ? new Color(1f, 0.7f, 0.2f) : Color.white, crit);
             ImpactBurst3D.Spawn(transform.position, hitColor, count: crit ? 14 : 8, speed: crit ? 4.8f : 3.4f, lifetime: crit ? 0.42f : 0.30f, size: crit ? 0.10f : 0.075f);
+            if (crit)
+            {
+                StickAudio.PlayCrit(transform.position);
+                HitStop.Punch(0.055f, 0.065f);
+            }
 
             if (crit && ownerHero != null) ownerHero.OnCrit(transform.position);
 
@@ -170,6 +176,7 @@ namespace StickEvolve.Combat
             hp.Heal(damage);
             DamageNumber.Spawn(transform.position, damage, new Color(0.4f, 1f, 0.5f));
             ImpactBurst3D.Spawn(transform.position, new Color(0.35f, 1f, 0.55f), count: 8, speed: 2.8f, lifetime: 0.30f, size: 0.075f);
+            StickAudio.PlayHeal(transform.position);
         }
 
         private void ApplySplash(Collider2D primaryTarget, float splashDamage)
@@ -187,6 +194,8 @@ namespace StickEvolve.Combat
             }
             SpawnExplosionFx(transform.position, explosionRadius);
             ImpactBurst3D.Spawn(transform.position, new Color(1f, 0.45f, 0.10f), count: 22, speed: 5.5f, lifetime: 0.55f, size: 0.12f);
+            StickAudio.PlayExplosion(transform.position);
+            HitStop.Punch(0.055f, 0.075f);
         }
 
         public static void SpawnExplosionFx(Vector3 pos, float radius)

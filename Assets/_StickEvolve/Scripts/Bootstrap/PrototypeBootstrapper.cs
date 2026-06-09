@@ -113,6 +113,7 @@ namespace StickEvolve.Bootstrap
             {
                 // Перспективная 3D-камера с наклоном (third-person сверху-сзади).
                 Arena3DBuilder.ConfigureCamera(_cam, arenaHalfWidth, arenaHalfHeight);
+                VisualPolishRuntime.Apply3D(_cam);
             }
             else
             {
@@ -122,9 +123,13 @@ namespace StickEvolve.Bootstrap
                 _cam.clearFlags = CameraClearFlags.SolidColor;
                 _cam.backgroundColor = new Color(0.08f, 0.09f, 0.12f);
             }
-            // V1 juice: камера должна уметь трястись.
+            // V1 juice: камера должна уметь трястись. V2 pipeline: звук + hit stop глобально.
             if (_cam.gameObject.GetComponent<CameraShaker>() == null)
                 _cam.gameObject.AddComponent<CameraShaker>();
+            if (_cam.gameObject.GetComponent<AudioListener>() == null)
+                _cam.gameObject.AddComponent<AudioListener>();
+            HitStop.Ensure();
+            StickAudio.Ensure();
         }
 
         private void Build3DWorld()
