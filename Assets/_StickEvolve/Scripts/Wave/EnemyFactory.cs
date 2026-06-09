@@ -10,6 +10,11 @@ namespace StickEvolve.Wave
     /// </summary>
     public static class EnemyFactory
     {
+        /// <summary>3D-режим: парентим юнитов под Arena3DRoot и собираем 3D-меш вместо 2D-стикмена.</summary>
+        public static bool Use3D = false;
+        /// <summary>Куда парентить новых врагов (повёрнутый Arena3DRoot в 3D-режиме).</summary>
+        public static Transform SpawnRoot;
+
         /// <summary>Последний WaveConfig, использованный для спавна. Используется Splitter-ом для миньонов.</summary>
         private static WaveConfig _lastSpawnCfg;
 
@@ -32,11 +37,26 @@ namespace StickEvolve.Wave
         private static Enemy SpawnInternal(EnemyKind kind, Vector3 pos, WaveConfig cfg, int splitTier)
         {
             var go = new GameObject($"Enemy_{kind}");
-            go.transform.position = pos;
+            if (Use3D && SpawnRoot != null)
+            {
+                go.transform.SetParent(SpawnRoot, worldPositionStays: false);
+                go.transform.localPosition = pos;
+            }
+            else
+            {
+                go.transform.position = pos;
+            }
 
-            BuildVisual(go, kind, splitTier);
-            AddShadow(go);
-            AddShielderShield(go, kind);
+            if (Use3D)
+            {
+                BuildVisual3D(go, kind, splitTier);
+            }
+            else
+            {
+                BuildVisual(go, kind, splitTier);
+                AddShadow(go);
+                AddShielderShield(go, kind);
+            }
 
             var col = go.AddComponent<CapsuleCollider2D>();
             col.size = new Vector2(0.6f, 1.4f);
@@ -60,10 +80,47 @@ namespace StickEvolve.Wave
                                        : kind == EnemyKind.Tank ? 0.25f
                                        : 0.12f;
             }
-            // V2 fantasy outfit: оружие + светящееся кольцо под ногами.
-            if (splitTier == 0 || kind != EnemyKind.Splitter)
+            // V2 fantasy outfit (2D-режим): оружие + светящееся кольцо под ногами.
+            if (!Use3D && (splitTier == 0 || kind != EnemyKind.Splitter))
                 FantasyOutfit.Apply(go, TeamColor(kind), WeaponForKind(kind), isHero: false);
             return enemy;
+        }
+
+        private static void BuildVisual3D(GameObject root, EnemyKind kind, int splitTier)
+        {
+            var color = TeamColor(kind);
+            float scale = kind switch
+            {
+                EnemyKind.Tank => 1.20f,
+                EnemyKind.Boss => 1.55f,
+                EnemyKind.Runner => 0.85f,
+                EnemyKind.Splitter => splitTier > 0 ? 0.65f : 0.95f,
+                _ => 1f,
+            };
+            Character3DBuilder.Weapon w = kind switch
+            {
+                EnemyKind.Fighter  => Character3DBuilder.Weapon.Sword,
+                EnemyKind.Runner   => Character3DBuilder.Weapon.Dagger,
+                EnemyKind.Tank     => Character3DBuilder.Weapon.GreatSword,
+                EnemyKind.Mage     => Character3DBuilder.Weapon.Staff,
+                EnemyKind.Boss     => Character3DBuilder.Weapon.Scythe,
+                EnemyKind.Healer   => Character3DBuilder.Weapon.Staff,
+                EnemyKind.Shielder => Character3DBuilder.Weapon.Sword,
+                EnemyKind.Sniper   => Character3DBuilder.Weapon.Bow,
+                _ => Character3DBuilder.Weapon.None,
+            };
+            Character3DBuilder.Build(root, new Character3DBuilder.Config
+            {
+                bodyColor    = color,
+                skinColor    = new Color(0.82f, 0.78f, 0.70f),
+                capeColor    = new Color(color.r * 0.4f, color.g * 0.4f, color.b * 0.4f),
+                hasCape      = kind == EnemyKind.Mage || kind == EnemyKind.Boss,
+                hasHat       = kind == EnemyKind.Tank || kind == EnemyKind.Boss || kind == EnemyKind.Shielder,
+                wideShoulders= kind == EnemyKind.Tank || kind == EnemyKind.Boss,
+                bodyScale    = scale,
+                weapon       = w,
+                isHero       = false,
+            });
         }
 
         private static FantasyOutfit.Weapon WeaponForKind(EnemyKind kind) => kind switch

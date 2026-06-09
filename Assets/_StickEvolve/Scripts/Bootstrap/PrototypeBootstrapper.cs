@@ -32,6 +32,10 @@ namespace StickEvolve.Bootstrap
         [Tooltip("Расстояние, на котором companions держатся от лидера.")]
         [SerializeField] private float companionRadius = 1.2f;
 
+        [Header("3D-режим")]
+        [Tooltip("Полноценный 3D-рендер: перспективная камера, наклон, 3D-персонажи и арена. 2D-фон отключается.")]
+        [SerializeField] private bool use3D = true;
+
         [Header("Фон-картинка")]
         [Tooltip("Если включено — рисуем художественный фон-картинку вместо процедурного неба/гор/деревьев.")]
         [SerializeField] private bool useImageBackground = true;
@@ -49,6 +53,7 @@ namespace StickEvolve.Bootstrap
         private GameOverUI _gameOverUI;
         private Camera _cam;
         private Canvas _canvas;
+        private Transform _arena3DRoot;
 
         private readonly List<Hero> _heroes = new();
         private float _heroSpacing = 1.5f;
@@ -73,6 +78,7 @@ namespace StickEvolve.Bootstrap
         {
             BuildCamera();
             ComputePlayfieldBounds();
+            if (use3D) Build3DWorld();
             BuildBackground();
             BuildCanvas();
             BuildGameManager();
@@ -103,18 +109,51 @@ namespace StickEvolve.Bootstrap
                 _cam = camGO.AddComponent<Camera>();
                 camGO.AddComponent<AudioListener>();
             }
-            _cam.orthographic = true;
-            _cam.orthographicSize = 5.5f;
-            _cam.transform.position = new Vector3(0f, 0f, -10f);
-            _cam.clearFlags = CameraClearFlags.SolidColor;
-            _cam.backgroundColor = new Color(0.08f, 0.09f, 0.12f);
+            if (use3D)
+            {
+                // Перспективная 3D-камера с наклоном (third-person сверху-сзади).
+                Arena3DBuilder.ConfigureCamera(_cam, arenaHalfWidth, arenaHalfHeight);
+            }
+            else
+            {
+                _cam.orthographic = true;
+                _cam.orthographicSize = 5.5f;
+                _cam.transform.position = new Vector3(0f, 0f, -10f);
+                _cam.clearFlags = CameraClearFlags.SolidColor;
+                _cam.backgroundColor = new Color(0.08f, 0.09f, 0.12f);
+            }
             // V1 juice: камера должна уметь трястись.
             if (_cam.gameObject.GetComponent<CameraShaker>() == null)
                 _cam.gameObject.AddComponent<CameraShaker>();
         }
 
+        private void Build3DWorld()
+        {
+            // Корень арены — обычный, без поворота. Гейм-плей остаётся на XY-плоскости (z=0),
+            // 2D-физика спокойно работает. Высота персонажей строится вдоль +Z, камера наклонена
+            // в YZ-плоскости (см. Arena3DBuilder.ConfigureCamera).
+            var rootGO = new GameObject("Arena3DRoot");
+            _arena3DRoot = rootGO.transform;
+
+            Arena3DBuilder.BuildLighting();
+            Arena3DBuilder.Build(_arena3DRoot, arenaHalfWidth, arenaHalfHeight);
+
+            // Сообщаем спавнерам, куда парентить новых юнитов и какой режим визуала использовать.
+            EnemyFactory.Use3D = true;
+            EnemyFactory.SpawnRoot = _arena3DRoot;
+        }
+
         private void ComputePlayfieldBounds()
         {
+            if (use3D)
+            {
+                // Под портретный кадр и наклонённую камеру.
+                arenaHalfWidth  = 4.5f;
+                arenaHalfHeight = 6.0f;
+                _heroX = 0f;
+                _enemyX = arenaHalfWidth + 1f;
+                return;
+            }
             float halfHeight = _cam.orthographicSize;
             float halfWidth = halfHeight * Mathf.Max(_cam.aspect, 0.5f);
             if (topDownArena)
@@ -135,6 +174,9 @@ namespace StickEvolve.Bootstrap
 
         private void BuildBackground()
         {
+            // В 3D-режиме весь фон строится Arena3DBuilder'ом (пол, стены, освещение).
+            if (use3D) return;
+
             // 1) Если включён режим картинки — пытаемся загрузить спрайт и выходим, не строя процедурку.
             if (useImageBackground && TryBuildImageBackground())
             {
@@ -479,7 +521,50 @@ namespace StickEvolve.Bootstrap
         {
             var s = HeroClassStats.Get(cls);
             var go = new GameObject($"Hero_{cls}");
-            go.transform.position = pos;
+            if (use3D && _arena3DRoot != null)
+            {
+                go.transform.SetParent(_arena3DRoot, worldPositionStays: false);
+                go.transform.localPosition = pos;
+            }
+            else
+            {
+                go.transform.position = pos;
+            }
+
+            if (use3D)
+            {
+                Character3DBuilder.Build(go, new Character3DBuilder.Config
+                {
+                    bodyColor    = s.tint,
+                    skinColor    = new Color(0.92f, 0.78f, 0.65f),
+                    capeColor    = s.capeColor,
+                    hasCape      = s.hasCape,
+                    hasHat       = s.hasHat,
+                    wideShoulders= s.wideShoulders,
+                    bodyScale    = s.bodyScale,
+                    weapon       = Weapon3DForHero(cls),
+                    isHero       = true,
+                });
+
+                var col = go.AddComponent<CapsuleCollider2D>();
+                col.size = new Vector2(0.6f, 1.4f);
+                col.isTrigger = true;
+                go.AddComponent<TeamMember>();
+                go.AddComponent<Health>();
+                var hero3 = go.AddComponent<Hero>();
+                hero3.HeroClass = cls;
+                hero3.bulletColor = new Color(Mathf.Clamp01(s.tint.r + 0.1f), Mathf.Clamp01(s.tint.g + 0.2f), 1f);
+                var juice3 = Juice.Attach(go);
+                if (juice3 != null)
+                {
+                    juice3.deathParticleColor = s.tint;
+                    juice3.deathParticleCount = 14;
+                    juice3.deathShakeTrauma = 0.6f;
+                    juice3.outlineHpFraction = 0.35f;
+                }
+                CardEffect.ApplyDefaultsToNewHero(hero3);
+                return hero3;
+            }
 
             var cfg = StickmanConfig.Default(s.tint);
             cfg.bodyScale = s.bodyScale;
@@ -542,6 +627,19 @@ namespace StickEvolve.Bootstrap
             CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
         }
+
+        private static StickEvolve.VFX.Character3DBuilder.Weapon Weapon3DForHero(HeroClass cls) => cls switch
+        {
+            HeroClass.Warrior   => StickEvolve.VFX.Character3DBuilder.Weapon.Sword,
+            HeroClass.Tank      => StickEvolve.VFX.Character3DBuilder.Weapon.GreatSword,
+            HeroClass.Berserker => StickEvolve.VFX.Character3DBuilder.Weapon.GreatSword,
+            HeroClass.Archer    => StickEvolve.VFX.Character3DBuilder.Weapon.Bow,
+            HeroClass.Sniper    => StickEvolve.VFX.Character3DBuilder.Weapon.Bow,
+            HeroClass.Mage      => StickEvolve.VFX.Character3DBuilder.Weapon.Staff,
+            HeroClass.Healer    => StickEvolve.VFX.Character3DBuilder.Weapon.Staff,
+            HeroClass.Ninja     => StickEvolve.VFX.Character3DBuilder.Weapon.Dagger,
+            _ => StickEvolve.VFX.Character3DBuilder.Weapon.Sword,
+        };
 
         private static StickEvolve.VFX.FantasyOutfit.Weapon WeaponForHero(HeroClass cls) => cls switch
         {
