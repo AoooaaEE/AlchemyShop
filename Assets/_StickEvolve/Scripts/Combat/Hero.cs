@@ -1,4 +1,5 @@
 using System;
+using StickEvolve.VFX;
 using UnityEngine;
 
 namespace StickEvolve.Combat
@@ -49,6 +50,7 @@ namespace StickEvolve.Combat
         private float _cloneDespawnTime = -1f;
         private Health _health;
         private StickmanAnimator _animator;
+        private Character3DAnimator _animator3D;
 
         private void Awake()
         {
@@ -56,6 +58,7 @@ namespace StickEvolve.Combat
             var team = GetComponent<TeamMember>();
             team.team = CombatTeam.Heroes;
             _animator = GetComponentInChildren<StickmanAnimator>();
+            _animator3D = GetComponentInChildren<Character3DAnimator>();
             _health.OnDeath += HandleOwnDeath;
         }
 
@@ -148,6 +151,7 @@ namespace StickEvolve.Combat
                 b.ownerHero = this;
             }
             _animator?.TriggerShoot();
+            _animator3D?.TriggerAttack(target.transform.position);
         }
 
         private float BerserkerMultiplier()
@@ -169,6 +173,7 @@ namespace StickEvolve.Combat
                 CombatTeam.Heroes, new Color(0.4f, 1f, 0.5f));
             b.isHealing = true;
             _animator?.TriggerShoot();
+            _animator3D?.TriggerAttack(ally.transform.position);
             return true;
         }
 

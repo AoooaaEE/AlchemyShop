@@ -59,12 +59,14 @@ namespace StickEvolve.Combat
 
         private float _nextAttackTime;
         private Hero _target;
+        private Character3DAnimator _animator3D;
 
         private void Awake()
         {
             Health = GetComponent<Health>();
             var team = GetComponent<TeamMember>();
             team.team = CombatTeam.Enemies;
+            _animator3D = GetComponentInChildren<Character3DAnimator>();
             Health.OnDeath += HandleDeath;
         }
 
@@ -146,6 +148,7 @@ namespace StickEvolve.Combat
             var b = Bullet.Spawn(transform.position + (Vector3)(fdir * 0.4f), fdir, bulletDamage, bulletSpeed,
                 CombatTeam.Enemies, new Color(0.4f, 1f, 0.5f));
             b.isHealing = true;
+            _animator3D?.TriggerAttack(ally.transform.position);
         }
 
         private void TryAttack()
@@ -166,11 +169,13 @@ namespace StickEvolve.Combat
                         CombatTeam.Heroes, bulletColor);
                     b.explosionRadius = bulletExplosionRadius;
                     b.explosionSplashRatio = bulletExplosionSplash;
+                    _animator3D?.TriggerAttack(_target.transform.position);
                     break;
                 }
                 case EnemyKind.Bomber:
                 {
                     // Самоподрыв в AoE
+                    _animator3D?.TriggerAttack(_target.transform.position);
                     ApplyBomberExplosion();
                     if (selfDestructOnAttack)
                         Health.TakeDamage(99999f, transform.position);
@@ -181,6 +186,7 @@ namespace StickEvolve.Combat
                     var dmg = _target.GetComponent<IDamageable>();
                     if (dmg != null && dmg.IsAlive)
                     {
+                        _animator3D?.TriggerAttack(_target.transform.position);
                         dmg.TakeDamage(damage, _target.transform.position);
                         DamageNumber.Spawn(_target.transform.position, damage, new Color(1f, 0.3f, 0.3f));
                         ImpactBurst3D.Spawn(_target.transform.position, new Color(1f, 0.32f, 0.20f), count: 9, speed: 3.7f, lifetime: 0.32f, size: 0.085f);

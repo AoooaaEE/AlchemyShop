@@ -69,10 +69,20 @@ namespace StickEvolve.VFX
                 new Vector3(0f, 0f, torsoCenterZ),
                 new Vector3(shoulderW, 0.28f * bs, torsoH));
 
-            // — Ремень —
+            // — Ремень + читаемый class/faction sigil на груди —
             MakeCube(visual.transform, "Belt", new Color(0.18f, 0.12f, 0.06f),
                 new Vector3(0f, 0f, hipZ + torsoH * 0.18f),
                 new Vector3(shoulderW * 1.05f, 0.30f * bs, 0.10f));
+            Color sigil = cfg.isHero ? new Color(0.25f, 0.85f, 1.0f) : new Color(1.0f, 0.22f, 0.14f);
+            MakeCubeEmissive(visual.transform, "ChestSigil", sigil, sigil, 1.4f,
+                new Vector3(0f, -0.145f * bs, torsoCenterZ + 0.10f * bs),
+                new Vector3(0.18f * bs, 0.035f * bs, 0.16f * bs));
+            if (cfg.isHero)
+            {
+                MakeCubeEmissive(visual.transform, "HeroBackBanner", new Color(0.08f, 0.18f, 0.30f), new Color(0.20f, 0.75f, 1f), 0.5f,
+                    new Vector3(0f, 0.22f * bs, torsoCenterZ + 0.10f * bs),
+                    new Vector3(0.08f * bs, 0.035f * bs, torsoH * 0.85f));
+            }
 
             // — Плащ (сзади торса по локальной Y) —
             if (cfg.hasCape)
@@ -87,12 +97,24 @@ namespace StickEvolve.VFX
                 new Vector3(0f, 0f, headCenterZ),
                 Vector3.one * (headR * 2f));
 
-            // — Шлем —
+            // — Шлем / рога: чтобы враги и танки читались с камеры даже без текстур —
             if (cfg.hasHat)
             {
                 MakeCube(visual.transform, "Helmet", new Color(0.18f, 0.16f, 0.18f),
                     new Vector3(0f, 0f, headCenterZ + headR * 0.55f),
                     new Vector3(headR * 2.1f, headR * 2.1f, headR * 0.55f));
+            }
+            if (!cfg.isHero)
+            {
+                Color horn = cfg.hasHat ? new Color(0.75f, 0.55f, 0.28f) : new Color(0.18f, 0.12f, 0.10f);
+                var hornL = MakeCube(visual.transform, "HornL", horn,
+                    new Vector3(-headR * 0.75f, -headR * 0.10f, headCenterZ + headR * 0.65f),
+                    new Vector3(headR * 0.23f, headR * 0.18f, headR * 0.75f));
+                hornL.transform.localRotation = Quaternion.Euler(0f, 25f, 0f);
+                var hornR = MakeCube(visual.transform, "HornR", horn,
+                    new Vector3(headR * 0.75f, -headR * 0.10f, headCenterZ + headR * 0.65f),
+                    new Vector3(headR * 0.23f, headR * 0.18f, headR * 0.75f));
+                hornR.transform.localRotation = Quaternion.Euler(0f, -25f, 0f);
             }
 
             // — Глаза (эмиссивные точки на передней стороне головы, -Y) —
@@ -140,6 +162,9 @@ namespace StickEvolve.VFX
 
             // — Светящееся кольцо под ногами (декаль на полу: тонкий плоский цилиндр) —
             AddGroundGlow(visual.transform, cfg.bodyColor, cfg.isHero);
+
+            // Code-only procedural animation: walk/idle/attack/readability without Animator Controller.
+            visual.AddComponent<Character3DAnimator>();
 
             return visual;
         }
