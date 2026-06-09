@@ -60,8 +60,26 @@ namespace StickEvolve.Wave
                                        : kind == EnemyKind.Tank ? 0.25f
                                        : 0.12f;
             }
+            // V2 fantasy outfit: оружие + светящееся кольцо под ногами.
+            if (splitTier == 0 || kind != EnemyKind.Splitter)
+                FantasyOutfit.Apply(go, TeamColor(kind), WeaponForKind(kind), isHero: false);
             return enemy;
         }
+
+        private static FantasyOutfit.Weapon WeaponForKind(EnemyKind kind) => kind switch
+        {
+            EnemyKind.Fighter  => FantasyOutfit.Weapon.Sword,
+            EnemyKind.Runner   => FantasyOutfit.Weapon.Dagger,
+            EnemyKind.Tank     => FantasyOutfit.Weapon.GreatSword,
+            EnemyKind.Mage     => FantasyOutfit.Weapon.Staff,
+            EnemyKind.Boss     => FantasyOutfit.Weapon.Scythe,
+            EnemyKind.Healer   => FantasyOutfit.Weapon.Staff,
+            EnemyKind.Shielder => FantasyOutfit.Weapon.Sword,
+            EnemyKind.Splitter => FantasyOutfit.Weapon.None,
+            EnemyKind.Sniper   => FantasyOutfit.Weapon.Bow,
+            EnemyKind.Bomber   => FantasyOutfit.Weapon.None,
+            _ => FantasyOutfit.Weapon.Sword,
+        };
 
         private static void BuildVisual(GameObject root, EnemyKind kind, int splitTier)
         {
@@ -192,18 +210,19 @@ namespace StickEvolve.Wave
             sr.sortingOrder = 6;
         }
 
+        // Палитра «нежить и тени» — под Hades-фон.
         private static Color TeamColor(EnemyKind kind) => kind switch
         {
-            EnemyKind.Fighter  => new Color(0.85f, 0.3f, 0.3f),
-            EnemyKind.Runner   => new Color(1f, 0.55f, 0.2f),
-            EnemyKind.Tank     => new Color(0.55f, 0.25f, 0.25f),
-            EnemyKind.Mage     => new Color(0.7f, 0.35f, 0.95f),
-            EnemyKind.Boss     => new Color(0.45f, 0.08f, 0.08f),
-            EnemyKind.Healer   => new Color(0.85f, 0.95f, 0.85f),
-            EnemyKind.Shielder => new Color(0.55f, 0.55f, 0.7f),
-            EnemyKind.Splitter => new Color(0.95f, 0.45f, 0.6f),
-            EnemyKind.Sniper   => new Color(0.4f, 0.5f, 0.75f),
-            EnemyKind.Bomber   => new Color(0.95f, 0.65f, 0.2f),
+            EnemyKind.Fighter  => new Color(0.82f, 0.78f, 0.68f), // костяной скелет
+            EnemyKind.Runner   => new Color(0.70f, 0.18f, 0.20f), // багровый призрак
+            EnemyKind.Tank     => new Color(0.28f, 0.22f, 0.28f), // тёмная броня
+            EnemyKind.Mage     => new Color(0.55f, 0.25f, 0.85f), // лиловый чернокнижник
+            EnemyKind.Boss     => new Color(0.10f, 0.05f, 0.10f), // смоляной босс
+            EnemyKind.Healer   => new Color(0.72f, 0.85f, 0.95f), // ледяной призрак
+            EnemyKind.Shielder => new Color(0.50f, 0.40f, 0.25f), // потёртая бронза
+            EnemyKind.Splitter => new Color(0.45f, 0.78f, 0.28f), // ядовитый слайм
+            EnemyKind.Sniper   => new Color(0.18f, 0.50f, 0.65f), // тёмная бирюза
+            EnemyKind.Bomber   => new Color(0.92f, 0.50f, 0.18f), // адский уголёк
             _ => Color.red,
         };
 

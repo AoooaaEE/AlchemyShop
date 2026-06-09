@@ -535,10 +535,26 @@ namespace StickEvolve.Bootstrap
                 juice.outlineHpFraction = 0.35f;
             }
 
+            // V2 fantasy outfit: оружие + золотое кольцо света под ногами.
+            FantasyOutfit.Apply(go, s.tint, WeaponForHero(cls), isHero: true);
+
             // Применяем накопленные апгрейды из карт (или базу при чистом сейве) + классовые множители.
             CardEffect.ApplyDefaultsToNewHero(hero);
             return hero;
         }
+
+        private static StickEvolve.VFX.FantasyOutfit.Weapon WeaponForHero(HeroClass cls) => cls switch
+        {
+            HeroClass.Warrior   => StickEvolve.VFX.FantasyOutfit.Weapon.Sword,
+            HeroClass.Tank      => StickEvolve.VFX.FantasyOutfit.Weapon.GreatSword,
+            HeroClass.Berserker => StickEvolve.VFX.FantasyOutfit.Weapon.GreatSword,
+            HeroClass.Archer    => StickEvolve.VFX.FantasyOutfit.Weapon.Bow,
+            HeroClass.Sniper    => StickEvolve.VFX.FantasyOutfit.Weapon.Bow,
+            HeroClass.Mage      => StickEvolve.VFX.FantasyOutfit.Weapon.Staff,
+            HeroClass.Healer    => StickEvolve.VFX.FantasyOutfit.Weapon.Staff,
+            HeroClass.Ninja     => StickEvolve.VFX.FantasyOutfit.Weapon.Dagger,
+            _ => StickEvolve.VFX.FantasyOutfit.Weapon.Sword,
+        };
 
         private void HookHeroDeath(Hero hero)
         {
