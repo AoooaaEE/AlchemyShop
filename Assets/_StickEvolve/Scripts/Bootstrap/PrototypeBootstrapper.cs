@@ -27,7 +27,7 @@ namespace StickEvolve.Bootstrap
         [Tooltip("Путь к спрайту фона относительно любой папки Resources (без расширения).")]
         [SerializeField] private string imageBackgroundResourcePath = "Backgrounds/fantasy_forest_bg";
         [Tooltip("Сдвиг фона по вертикали в мировых координатах. Отрицательное значение опускает фон, чтобы линия горизонта/травы пришлась туда, где стоят персонажи (y≈-1.3).")]
-        [SerializeField] private float imageBackgroundYOffset = -2.0f;
+        [SerializeField] private float imageBackgroundYOffset = -1.5f;
         [Tooltip("Запас по cover-fit (1.0 = впритык по краю камеры).")]
         [SerializeField] private float imageBackgroundPadding = 1.04f;
 
