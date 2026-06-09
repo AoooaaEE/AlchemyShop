@@ -33,7 +33,8 @@ namespace StickEvolve.VFX
             visual.transform.SetParent(root.transform, worldPositionStays: false);
 
             // Базовые размеры. Локальная ось Z = «вверх» (после поворота родителя).
-            float bs = cfg.bodyScale <= 0f ? 1f : cfg.bodyScale;
+            // Чуть увеличиваем только визуал (коллайдеры/геймплей не трогаем), чтобы персонажи читались с 3D-камеры.
+            float bs = (cfg.bodyScale <= 0f ? 1f : cfg.bodyScale) * 1.35f;
             float legH = 0.55f * bs;          // высота ноги
             float torsoH = 0.70f * bs;        // высота торса
             float headR = 0.22f * bs;         // радиус головы
@@ -219,6 +220,8 @@ namespace StickEvolve.VFX
             var mat = new Material(LitMaterial.SharedShader);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", baseColor);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", baseColor);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.55f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
             var emit = emitColor * emitIntensity;
             emit.a = 1f;
             if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", emit);
@@ -294,6 +297,8 @@ namespace StickEvolve.VFX
             var mat = new Material(GetShader());
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.55f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.0f);
             var emit = color * intensity;
             emit.a = 1f;
             if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", emit);
@@ -310,6 +315,8 @@ namespace StickEvolve.VFX
             var mat = new Material(GetShader());
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.32f);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.02f);
             if (transparent)
             {
                 if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);    // URP transparent

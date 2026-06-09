@@ -15,7 +15,9 @@ namespace StickEvolve.VFX
             BuildFloor(arenaRoot, halfWidth, halfHeight);
             BuildMagicCircle(arenaRoot);
             BuildWalls(arenaRoot, halfWidth, halfHeight);
+            BuildDecorativeTrim(arenaRoot, halfWidth, halfHeight);
             BuildColumnsAndTorches(arenaRoot, halfWidth, halfHeight);
+            BuildSideShrines(arenaRoot, halfWidth, halfHeight);
             BuildAmbientGlowSpots(arenaRoot, halfWidth, halfHeight);
 
             // Парящие угольки над ареной (две группы — тёплые и холодные).
@@ -67,6 +69,32 @@ namespace StickEvolve.VFX
                     mr.receiveShadows = true;
                 }
             }
+
+            // «Dead Cells/Hades» деталь: прожилки/трещины с лавовым и холодным свечением.
+            BuildFloorCracks(arenaRoot);
+        }
+
+        private static void BuildFloorCracks(Transform arenaRoot)
+        {
+            void Crack(string name, Vector2 a, Vector2 b, Color c, float width, float emit)
+            {
+                Vector2 d = b - a;
+                float len = d.magnitude;
+                if (len <= 0.01f) return;
+                float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+                var seg = Character3DBuilder.MakeCubeEmissive(arenaRoot, name, c, c, emit,
+                    new Vector3((a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f, 0.018f),
+                    new Vector3(len, width, 0.025f));
+                seg.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+            }
+
+            Color lava = new Color(1.0f, 0.28f, 0.08f);
+            Color arcane = new Color(0.35f, 0.80f, 1.0f);
+            Crack("LavaCrack_A", new Vector2(-3.6f, -3.8f), new Vector2(-1.9f, -2.1f), lava, 0.045f, 1.7f);
+            Crack("LavaCrack_B", new Vector2(-1.9f, -2.1f), new Vector2(-0.9f, -2.6f), lava, 0.035f, 1.4f);
+            Crack("LavaCrack_C", new Vector2(2.9f, 3.5f), new Vector2(1.7f, 2.2f), lava, 0.04f, 1.5f);
+            Crack("ArcaneCrack_A", new Vector2(-3.2f, 3.0f), new Vector2(-1.4f, 1.9f), arcane, 0.035f, 1.3f);
+            Crack("ArcaneCrack_B", new Vector2(1.0f, -3.0f), new Vector2(3.3f, -4.2f), arcane, 0.035f, 1.3f);
         }
 
         private static void BuildMagicCircle(Transform arenaRoot)
@@ -137,6 +165,67 @@ namespace StickEvolve.VFX
                 new Vector3( halfWidth + 0.02f, 0f, 0.08f), new Vector3(0.05f, h * 0.95f, 0.05f));
             Character3DBuilder.MakeCubeEmissive(arenaRoot, "StripW", stripColor, stripColor, 1.4f,
                 new Vector3(-halfWidth - 0.02f, 0f, 0.08f), new Vector3(0.05f, h * 0.95f, 0.05f));
+        }
+
+        private static void BuildDecorativeTrim(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            float w = halfWidth * 2f;
+            float h = halfHeight * 2f;
+            Color gold = new Color(0.95f, 0.66f, 0.20f);
+            Color blood = new Color(0.80f, 0.10f, 0.12f);
+            Color blue = new Color(0.25f, 0.70f, 1.0f);
+
+            // Золотые накладки на бортах — дают «дорогой» силуэт как в Hades.
+            Character3DBuilder.MakeCube(arenaRoot, "GoldTrimN", gold,
+                new Vector3(0f, halfHeight + 0.43f, 0.72f), new Vector3(w * 0.85f, 0.08f, 0.08f));
+            Character3DBuilder.MakeCube(arenaRoot, "GoldTrimS", gold,
+                new Vector3(0f, -halfHeight - 0.43f, 0.72f), new Vector3(w * 0.85f, 0.08f, 0.08f));
+            Character3DBuilder.MakeCube(arenaRoot, "GoldTrimE", gold,
+                new Vector3(halfWidth + 0.43f, 0f, 0.72f), new Vector3(0.08f, h * 0.85f, 0.08f));
+            Character3DBuilder.MakeCube(arenaRoot, "GoldTrimW", gold,
+                new Vector3(-halfWidth - 0.43f, 0f, 0.72f), new Vector3(0.08f, h * 0.85f, 0.08f));
+
+            // Ромбики/акценты на полу по углам: тёплый vs холодный цвет.
+            void Diamond(string name, float x, float y, Color c)
+            {
+                var d = Character3DBuilder.MakeCubeEmissive(arenaRoot, name, c, c, 1.0f,
+                    new Vector3(x, y, 0.03f), new Vector3(0.30f, 0.30f, 0.03f));
+                d.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            }
+            Diamond("FloorSigilNW", -halfWidth * 0.58f, halfHeight * 0.50f, blue);
+            Diamond("FloorSigilNE",  halfWidth * 0.58f, halfHeight * 0.50f, gold);
+            Diamond("FloorSigilSW", -halfWidth * 0.58f, -halfHeight * 0.50f, blood);
+            Diamond("FloorSigilSE",  halfWidth * 0.58f, -halfHeight * 0.50f, blue);
+        }
+
+        private static void BuildSideShrines(Transform arenaRoot, float halfWidth, float halfHeight)
+        {
+            // Маленькие декоративные алтари по бокам: визуальный шум и масштаб сцены.
+            void Shrine(string name, float x, float y, Color flame)
+            {
+                var root = new GameObject(name);
+                root.transform.SetParent(arenaRoot, worldPositionStays: false);
+                root.transform.localPosition = new Vector3(x, y, 0f);
+
+                Character3DBuilder.MakeCube(root.transform, "Base", new Color(0.18f, 0.14f, 0.16f),
+                    new Vector3(0f, 0f, 0.16f), new Vector3(0.55f, 0.45f, 0.32f));
+                Character3DBuilder.MakeCube(root.transform, "Top", new Color(0.42f, 0.34f, 0.38f),
+                    new Vector3(0f, 0f, 0.45f), new Vector3(0.70f, 0.55f, 0.18f));
+                Character3DBuilder.MakeSphereEmissive(root.transform, "Orb", flame, 2.2f,
+                    new Vector3(0f, 0f, 0.78f), Vector3.one * 0.28f);
+                var lgo = new GameObject("ShrineLight");
+                lgo.transform.SetParent(root.transform, worldPositionStays: false);
+                lgo.transform.localPosition = new Vector3(0f, 0f, 0.90f);
+                var light = lgo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = flame;
+                light.intensity = 1.2f;
+                light.range = 3.0f;
+                light.shadows = LightShadows.None;
+            }
+
+            Shrine("ShrineLeft",  -halfWidth - 1.0f, 0f, new Color(0.35f, 0.85f, 1.0f));
+            Shrine("ShrineRight",  halfWidth + 1.0f, 0f, new Color(1.0f, 0.30f, 0.18f));
         }
 
         private static void BuildColumnsAndTorches(Transform arenaRoot, float halfWidth, float halfHeight)
@@ -277,13 +366,14 @@ namespace StickEvolve.VFX
         {
             if (cam == null) return;
             cam.orthographic = false;
-            cam.fieldOfView = 60f;
+            cam.fieldOfView = 48f;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 120f;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.05f, 0.04f, 0.10f);
-            cam.transform.position = new Vector3(0f, -11f, 9f);
-            cam.transform.LookAt(new Vector3(0f, 1f, 0.8f), Vector3.up);
+            // Ближе и уже FOV: арена и персонажи выглядят крупнее и «премиальнее», без ощущения пустой коробки.
+            cam.transform.position = new Vector3(0f, -8.7f, 7.2f);
+            cam.transform.LookAt(new Vector3(0f, 0.9f, 0.9f), Vector3.up);
         }
     }
 }
