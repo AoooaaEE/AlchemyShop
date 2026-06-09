@@ -1,5 +1,6 @@
 using StickEvolve.Combat;
 using StickEvolve.Economy;
+using StickEvolve.VFX;
 using UnityEngine;
 
 namespace StickEvolve.Wave
@@ -48,6 +49,17 @@ namespace StickEvolve.Wave
             enemy.splitTier = splitTier;
 
             ApplyStats(enemy, hp, kind, cfg, splitTier);
+
+            // V1 juice: hit-flash / squash / death burst / низкоHP outline.
+            var juice = Juice.Attach(go);
+            if (juice != null)
+            {
+                juice.deathParticleColor = TeamColor(kind);
+                juice.deathParticleCount = kind == EnemyKind.Tank || kind == EnemyKind.Boss ? 16 : 9;
+                juice.deathShakeTrauma = kind == EnemyKind.Boss ? 0.55f
+                                       : kind == EnemyKind.Tank ? 0.25f
+                                       : 0.12f;
+            }
             return enemy;
         }
 

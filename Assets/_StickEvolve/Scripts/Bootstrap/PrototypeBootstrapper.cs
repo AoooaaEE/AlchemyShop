@@ -5,6 +5,7 @@ using StickEvolve.Combat;
 using StickEvolve.Core;
 using StickEvolve.Economy;
 using StickEvolve.UI;
+using StickEvolve.VFX;
 using StickEvolve.Wave;
 using UnityEngine;
 using UnityEngine.UI;
@@ -87,6 +88,9 @@ namespace StickEvolve.Bootstrap
             _cam.transform.position = new Vector3(0f, 0f, -10f);
             _cam.clearFlags = CameraClearFlags.SolidColor;
             _cam.backgroundColor = new Color(0.08f, 0.09f, 0.12f);
+            // V1 juice: камера должна уметь трястись.
+            if (_cam.gameObject.GetComponent<CameraShaker>() == null)
+                _cam.gameObject.AddComponent<CameraShaker>();
         }
 
         private void ComputePlayfieldBounds()
@@ -446,6 +450,16 @@ namespace StickEvolve.Bootstrap
             var hero = go.AddComponent<Hero>();
             hero.HeroClass = cls;
             hero.bulletColor = new Color(Mathf.Clamp01(s.tint.r + 0.1f), Mathf.Clamp01(s.tint.g + 0.2f), 1f);
+
+            // V1 juice на героях: смерть героя — заметная тряска камеры и крупный взрыв.
+            var juice = Juice.Attach(go);
+            if (juice != null)
+            {
+                juice.deathParticleColor = s.tint;
+                juice.deathParticleCount = 14;
+                juice.deathShakeTrauma = 0.6f;
+                juice.outlineHpFraction = 0.35f;
+            }
 
             // Применяем накопленные апгрейды из карт (или базу при чистом сейве) + классовые множители.
             CardEffect.ApplyDefaultsToNewHero(hero);
